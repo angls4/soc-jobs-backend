@@ -1,0 +1,9 @@
+# Direktori node_modules
+node_modules
+
+# Berkas yang dihasilkan oleh npm
+package-lock.json
+
+# Berkas log dan data sementara
+logs/
+.env
