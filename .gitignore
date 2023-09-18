@@ -1,9 +1,11 @@
-# Direktori node_modules
+# Installed Node.js packages
 node_modules
 
-# Berkas yang dihasilkan oleh npm
+# NPM Package
 package-lock.json
 
-# Berkas log dan data sementara
-logs/
+# dotenv environment variables file
 .env
+
+# source files
+src

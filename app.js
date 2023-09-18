@@ -1,9 +1,9 @@
 const express = require('express');
 const app = express();
 const port = 3000;
-// const route = require('./route');
+const route = require('./route');
 const session = require('express-session');
-// const passport = require('passport');
+const passport = require('passport');
 
 // Catch body from request
 app.use(express.json());
@@ -18,11 +18,11 @@ app.use(express.urlencoded({ extended: true }));
 // app.use(passport.initialize());
 // app.use(passport.session());
 
-// app.use("/", route);
+app.use("/", route);
 
 // Welcome page
 app.get('/', (req, res) => {
-  res.send('Welcome to Our Project'); // Frontend landing page
+  res.send('Welcome to SOC Jobs'); // Frontend landing page
 });
 
 // Route not found
@@ -38,5 +38,5 @@ app.use((err, req, res, next) => {
 
 // Listen to port
 app.listen(port, () => {
-  console.log(`Projects listening on port ${port}`);
+  console.log(`SOC Jobs listening on port ${port}`);
 });
