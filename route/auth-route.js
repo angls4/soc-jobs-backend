@@ -97,6 +97,12 @@ route.post('/register', async (req, res) => {
   }
 });
 
+// Logout logic
+route.post('/logout', (req, res) => {
+  req.logout();
+  res.redirect('/');
+});
+
 // Helper function to generate JWT token
 const generateAuthToken = (user) => {
   const { id, name, email } = user;

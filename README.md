@@ -17,8 +17,8 @@ This is a repository for SOC Jobs which is ...
 ## Repository Branches
 
 1. [main](https://github.com/BangTeg/soc.jobs) - About Project
-2. [back-end](https://github.com/BangTeg/soc.jobs) - BE Project Repository
-3. [front-end](https://github.com/BangTeg/soc.jobs) - FE Project Repository
+2. [back-end](https://github.com/BangTeg/soc.jobs-backend) - BE Project Repository
+3. [front-end](https://github.com/BangTeg/soc.jobs-frontend) - FE Project Repository
 
 ## Technologies
 
@@ -37,6 +37,7 @@ This is a repository for SOC Jobs which is ...
    - Nodemon
    - bcrypt
    - passport
+   - Guars
 
 3. <b>Others</b>
    - Visual Studio Code
