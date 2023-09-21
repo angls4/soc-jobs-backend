@@ -1,0 +1,21 @@
+project/
+|-- config/
+|   |-- googleOAuth.js
+|   |-- dbconfig.js
+|-- controllers/
+|   |-- authController.js
+|   |-- googleAuthController.js
+|-- db/
+|   |-- migrations/
+|   |-- models/
+|   |-- seeders
+|-- middleware/
+|   |-- auth.js
+|-- route/
+|   |-- auth.route.js
+|   |-- index.js
+|  src/
+|   |-- avatar/
+|   |-- logo/
+|-- app.js
+|-- 

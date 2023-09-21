@@ -10,7 +10,10 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       exp_desc: {
-        type: Sequelize.ENUM
+        type: Sequelize.ENUM(
+          'Kurang dari 1 tahun', '1 - 3 tahun',
+          '4 - 5 tahun', '6 - 10 tahun', 'Lebih dari 10 tahun'
+          )
       },
       createdAt: {
         allowNull: false,

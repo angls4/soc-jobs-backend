@@ -1,19 +1,25 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class experiences extends Model {
+  class Experience extends Model {
     static associate(models) {
       // Define associations here
-      experiences.hasMany(models.jobs, { foreignKey: 'exp_id', as: 'jobs' });
+      Experience.hasMany(models.Job, {
+        foreignKey: 'exp_id',
+        as: 'jobs'
+      });
     }
   }
   
-  experiences.init({
-    exp_desc: DataTypes.ENUM
+  Experience.init({
+    exp_desc: DataTypes.ENUM([
+      'Kurang dari 1 tahun', '1 - 3 tahun',
+      '4 - 5 tahun', '6 - 10 tahun', 'Lebih dari 10 tahun'
+    ])
   }, {
     sequelize,
-    modelName: 'experiences',
+    modelName: 'Experience',
   });
 
-  return experiences;
+  return Experience;
 };

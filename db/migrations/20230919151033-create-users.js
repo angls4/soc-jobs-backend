@@ -18,20 +18,26 @@ module.exports = {
       password: {
         type: Sequelize.STRING
       },
-      profile_image: {
+      avatar: {
         type: Sequelize.STRING
       },
       gender: {
-        type: Sequelize.ENUM
+        allowNull: false,
+        type: Sequelize.ENUM(['Male', 'Female'])
       },
       address: {
         type: Sequelize.STRING
       },
       contact: {
-        type: Sequelize.INTEGER
+        type: Sequelize.STRING
       },
       cv: {
         type: Sequelize.STRING
+      },
+      role: {
+        allowNull: false,
+        type: Sequelize.ENUM(['Admin', 'User']),
+        defaultValue: 'user',
       },
       createdAt: {
         allowNull: false,

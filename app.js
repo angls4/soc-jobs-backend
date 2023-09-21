@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
+// const cors = require('cors');
 const route = require('./route');
 const session = require('express-session');
 const passport = require('passport');
@@ -9,14 +11,14 @@ const passport = require('passport');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// app.use(session({
-//   resave: false,
-//   saveUninitialized: true,
-//   secret: 'secret'
-// }));
+app.use(session({
+  resave: false,
+  saveUninitialized: true,
+  secret: 'secret'
+}));
 
-// app.use(passport.initialize());
-// app.use(passport.session());
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use("/", route);
 

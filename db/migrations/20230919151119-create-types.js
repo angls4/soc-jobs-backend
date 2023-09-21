@@ -10,7 +10,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       job_type: {
-        type: Sequelize.ENUM
+        type: Sequelize.ENUM('Fulltime', 'Freelance', 'Internship')
       },
       createdAt: {
         allowNull: false,

@@ -3,28 +3,33 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class users extends Model {
+  class User extends Model {
     static associate(models) {
-      // Define the association
-      users.belongsTo(models.roles, {
-        foreignKey: 'role_id',
-        as: 'role', // alias for the related role
+      // Many-to-Many association with jobs through applications
+      User.belongsToMany(models.Job, {
+        through: 'Application',
+        foreignKey: 'users_id',
+        as: 'appliedJob'
       });
     }
   }
-  users.init({
+  User.init({
     name: DataTypes.STRING,
-    role_id: DataTypes.INTEGER,
     email: DataTypes.STRING,
     password: DataTypes.STRING,
-    profile_image: DataTypes.STRING,
-    gender: DataTypes.ENUM,
+    avatar: DataTypes.STRING,
+    gender: DataTypes.ENUM([
+      'Male', 'Female'
+    ]),
     address: DataTypes.STRING,
-    contact: DataTypes.INTEGER,
-    cv: DataTypes.STRING
+    contact: DataTypes.STRING,
+    cv: DataTypes.STRING,
+    role: DataTypes.ENUM([
+      'Admin', 'User'
+    ])
   }, {
     sequelize,
-    modelName: 'users',
+    modelName: 'User',
   });
-  return users;
+  return User;
 };

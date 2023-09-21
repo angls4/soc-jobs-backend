@@ -13,10 +13,10 @@ module.exports = {
         type: Sequelize.STRING
       },
       job_desc: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT('long')
       },
       requirement: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT('long')
       },
       logo: {
         type: Sequelize.STRING
@@ -25,7 +25,8 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       applicant: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+        defaultValue: 0
       },
       exp_id: {
         type: Sequelize.INTEGER
@@ -37,6 +38,7 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       closedAt: {
+        allowNull: false,
         type: Sequelize.DATE
       },
       createdAt: {

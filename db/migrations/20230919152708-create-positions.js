@@ -10,7 +10,11 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       position_name: {
-        type: Sequelize.ENUM
+        type: Sequelize.ENUM(
+          'Frontend Developer', 'Backend Developer', 'Fullstack Developer', 'DevOps Engineer',
+          'Copy Writer', 'Content Manager', 'Data Analyst', 'UI/UX Designer', 'Software Engineer', 'Project Manager', 'Business Analyst',
+          'QA Engineer', 'Mobile Developer', 'Other'
+          )
       },
       createdAt: {
         allowNull: false,

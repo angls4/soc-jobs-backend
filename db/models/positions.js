@@ -1,19 +1,26 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class positions extends Model {
+  class Position extends Model {
     static associate(models) {
       // Define associations here
-      positions.hasMany(models.jobs, { foreignKey: 'position_id', as: 'jobs' });
+      Position.hasMany(models.Job, {
+        foreignKey: 'position_id',
+        as: 'jobs'
+      });
     }
   }
   
-  positions.init({
-    position_name: DataTypes.ENUM
+  Position.init({
+    position_name: DataTypes.ENUM([
+      'Frontend Developer', 'Backend Developer', 'Fullstack Developer', 'DevOps Engineer',
+      'Copy Writer', 'Content Manager', 'Data Analyst', 'UI/UX Designer', 'Software Engineer', 'Project Manager', 'Business Analyst',
+      'QA Engineer', 'Mobile Developer', 'Other'
+    ])
   }, {
     sequelize,
-    modelName: 'positions',
+    modelName: 'Position',
   });
 
-  return positions;
+  return Position;
 };

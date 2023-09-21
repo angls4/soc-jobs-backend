@@ -3,22 +3,31 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class jobs extends Model {
+  class Job extends Model {
     static associate(models) {
       // Many-to-One associations
-      jobs.belongsTo(models.experiences, { foreignKey: 'exp_id', as: 'experience' });
-      jobs.belongsTo(models.types, { foreignKey: 'type_id', as: 'jobType' });
-      jobs.belongsTo(models.positions, { foreignKey: 'position_id', as: 'jobPosition' });
+      Job.belongsTo(models.Experience, {
+        foreignKey: 'exp_id',
+        as: 'jobExperience'
+      });
+      Job.belongsTo(models.Type, {
+        foreignKey: 'type_id',
+        as: 'jobType'
+      });
+      Job.belongsTo(models.Position, {
+        foreignKey: 'position_id',
+        as: 'jobPosition'
+      });
 
       // Many-to-Many association with users through applications
-      jobs.belongsToMany(models.users, {
-        through: models.applications,
+      Job.belongsToMany(models.User, {
+        through: 'Application',
         foreignKey: 'job_id',
-        as: 'applicants',
+        as: 'jobApplicant'
       });
     }
   }
-  jobs.init({
+  Job.init({
     title: DataTypes.STRING,
     job_desc: DataTypes.TEXT,
     requirement: DataTypes.TEXT,
@@ -31,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
     closedAt: DataTypes.DATE
   }, {
     sequelize,
-    modelName: 'jobs',
+    modelName: 'Job',
   });
-  return jobs;
+  return Job;
 };
