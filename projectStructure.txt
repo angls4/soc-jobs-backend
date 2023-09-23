@@ -1,21 +1,31 @@
-project/
+soc.jobs/
 |-- config/
 |   |-- googleOAuth.js
 |   |-- dbconfig.js
 |-- controllers/
 |   |-- authController.js
 |   |-- googleAuthController.js
+|   |-- userController.js
 |-- db/
 |   |-- migrations/
 |   |-- models/
+|   |   |-- applications.js
+|   |   |-- experiences.js
+|   |   |-- index.js
+|   |   |-- jobs.js
+|   |   |-- positions.js
+|   |   |-- types.js
+|   |   |-- users.js
 |   |-- seeders
 |-- middleware/
 |   |-- auth.js
 |-- route/
 |   |-- auth.route.js
 |   |-- index.js
+|   |-- user.route.js
 |  src/
 |   |-- avatar/
 |   |-- logo/
+|   |-- cv/
 |-- app.js
-|-- 
+|-- .env

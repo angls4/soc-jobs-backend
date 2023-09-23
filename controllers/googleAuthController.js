@@ -2,12 +2,11 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const { User } = require('../db/models'); // Import your User model
 
-
 // Login with Google
 exports.googleLogin = passport.authenticate('google', {
   scope: ['profile', 'email'],
   successRedirect: '/auth/google/protected',
-  failureRedirect: '/auth/google/failure'
+  failureRedirect: '/auth/google/failure',
 });
 
 // Endpoint called after successful Google authentication
@@ -16,11 +15,12 @@ exports.googleProtected = async (req, res) => {
     const name = req.user.displayName;
     const email = req.user.emails[0].value; // Corrected email extraction
     const avatar = req.user.photos[0].value; // Corrected avatar extraction
+    const gender = req.user.gender; // Add gender extraction
 
     // Find or create the user based on Google profile information
     const [user, created] = await User.findOrCreate({
       where: { email },
-      defaults: { name, avatar }
+      defaults: { name, avatar, gender }, // Include gender
     });
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
@@ -35,7 +35,7 @@ exports.googleProtected = async (req, res) => {
 exports.googleSuccess = (req, res) => {
   res.send({
     message: 'Login success',
-    token: req.params.token
+    token: req.params.token,
   });
 };
 
@@ -56,16 +56,16 @@ exports.googleCallback = (req, res) => {
       console.error(err);
       return res.status(500).send('Internal Server Error');
     }
-    
+
     if (!user) {
       return res.status(401).send('Google authentication failed');
     }
-    
+
     // If user is authenticated, generate a JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: '1d'
+      expiresIn: '1d',
     });
-    
+
     // Redirect to a success page with the token
     return res.redirect(`/auth/google/success/${token}`);
   })(req, res);
