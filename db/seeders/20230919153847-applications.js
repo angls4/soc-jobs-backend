@@ -4,29 +4,29 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     return queryInterface.bulkInsert('applications', [
       {
-        user_id: 1,
-        job_id: 1,
+        userId: 1,
+        jobId: 1,
         status: 'Pending',
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        user_id: 2,
-        job_id: 1,
+        userId: 2,
+        jobId: 1,
         status: 'Accepted',
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        user_id: 3,
-        job_id: 2,
+        userId: 3,
+        jobId: 2,
         status: 'Rejected',
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
-        user_id: 4,
-        job_id: 2,
+        userId: 4,
+        jobId: 2,
         status: 'Canceled',
         createdAt: new Date(),
         updatedAt: new Date()

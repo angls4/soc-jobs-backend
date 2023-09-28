@@ -18,15 +18,13 @@ module.exports = {
         email: 'tegar@example.com',
         password: '123',
         avatar: 'avatar-user.png',
-        gender: 'Female',
+        gender: 'Male',
         address: '456 Elm St',
         contact: '0812345678',
-        cv: 'cv_url_here',
         role: 'User',
         createdAt: new Date(),
         updatedAt: new Date()
       }
-      // Add more user data
     ]);
   },
 

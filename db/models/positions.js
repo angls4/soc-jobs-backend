@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // Define associations here
       Position.hasMany(models.Job, {
-        foreignKey: 'position_id',
+        foreignKey: 'positionId',
         as: 'jobs'
       });
     }

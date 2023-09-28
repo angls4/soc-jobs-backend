@@ -7,18 +7,18 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // Many-to-Many association with users through jobs
       Application.belongsTo(models.Job, {
-        foreignKey: 'job_id',
+        foreignKey: 'jobId',
         as: 'Job'
       });
       Application.belongsTo(models.User, {
-        foreignKey: 'user_id',
+        foreignKey: 'userId',
         as: 'User'
       });
     }
   }
   Application.init({
-    user_id: DataTypes.INTEGER,
-    job_id: DataTypes.INTEGER,
+    userId: DataTypes.INTEGER,
+    jobId: DataTypes.INTEGER,
     status: DataTypes.ENUM([
       'Pending', 'Accepted', 'Rejected', 'Canceled'
   ])

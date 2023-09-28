@@ -1,21 +1,20 @@
 const express = require('express');
-const route = express.Router();
+const router = express.Router();
 const userController = require('../controllers/userController');
-const authMiddleware = require('../middleware/auth');
+const verifiedToken = require('../middleware/auth');
+const { uploadAvatar, uploadCV } = require('../config/multerConfig');
 
-// Route to get the user's profile
-route.get('/profile', authMiddleware, userController.getProfile);
+// Middleware for authentication
+router.use(verifiedToken);
 
-// Route to get a user's profile by ID
-route.get('/profile/:id', authMiddleware, userController.getProfileById);
+// Routes for user-related actions
+router.get('/', userController.getAllUsers);
+router.get('/profile', userController.getProfile);
+router.get('/profile/:id', userController.getProfileById);
+router.put('/update/:id', userController.updateProfile);
 
-// Route to update the user's profile
-route.put('/profile', authMiddleware, userController.updateProfile);
+// Routes for file uploads
+router.post('/avatar', uploadAvatar.single('avatar'), userController.uploadAvatar);
+router.post('/cv', uploadCV.single('cv'), userController.uploadCV);
 
-// Route to upload a user's avatar (profile picture)
-route.post('/upload-avatar', authMiddleware, userController.uploadAvatar);
-
-// Route to upload a user's CV
-route.post('/upload-cv', authMiddleware, userController.uploadCV);
-
-module.exports = route;
+module.exports = router;

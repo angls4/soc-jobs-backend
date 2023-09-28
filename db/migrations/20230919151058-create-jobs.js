@@ -28,13 +28,13 @@ module.exports = {
         type: Sequelize.INTEGER,
         defaultValue: 0
       },
-      exp_id: {
+      expId: {
         type: Sequelize.INTEGER
       },
-      type_id: {
+      typeId: {
         type: Sequelize.INTEGER
       },
-      position_id: {
+      positionId: {
         type: Sequelize.INTEGER
       },
       closedAt: {

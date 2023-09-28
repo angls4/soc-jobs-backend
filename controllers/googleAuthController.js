@@ -1,6 +1,7 @@
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const { User } = require('../db/models'); // Import your User model
+const { handleError } = require('../utils/errorHandler'); // Import the error handling function
 
 // Login with Google
 exports.googleLogin = passport.authenticate('google', {
@@ -26,8 +27,7 @@ exports.googleProtected = async (req, res) => {
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET);
     return res.redirect(`/auth/google/success/${token}`);
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
+    return handleError(res, error); // Handle errors using the handleError function
   }
 };
 

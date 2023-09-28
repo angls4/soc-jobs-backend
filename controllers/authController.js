@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { User } = require('../db/models'); // Import User model
+const { User } = require('../db/models');
+const { handleError } = require('../utils/errorHandler');
 
 // Function to generate JWT token
 const generateAuthToken = (user) => {
@@ -10,61 +11,87 @@ const generateAuthToken = (user) => {
   });
 };
 
-// Login logic
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+module.exports = {
+  // Login logic
+  login: async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await User.findOne({ where: { email } });
 
-    const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return handleError(res, { status: 404, message: 'User not found' });
+      }
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+      if (!isPasswordMatch) {
+        return handleError(res, { status: 401, message: 'Wrong password' });
+      }
+
+      const token = generateAuthToken(user);
+      return res.json({ message: 'Login success', token, name: user.name });
+    } catch (error) {
+      return handleError(res, error);
     }
+  },
 
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+  // User Register logic
+  userRegister: async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const userExists = await User.findOne({ where: { email } });
 
-    if (!isPasswordMatch) {
-      return res.status(401).json({ message: 'Wrong password' });
+      if (userExists) {
+        return handleError(res, { status: 409, message: 'User already exists' });
+      }
+
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const user = await User.create({
+        name,
+        email,
+        password: hashedPassword
+      });
+
+      const token = generateAuthToken(user);
+      return res.json({ message: 'Register success', token, name: user.name });
+    } catch (error) {
+      return handleError(res, error);
     }
+  },
 
-    const token = generateAuthToken(user);
-    return res.json({ message: 'Login success', token, name: user.name });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Internal Server Error' });
+  // Admin Register logic
+  adminRegister: async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const role = 'Admin';
+
+      const userExists = await User.findOne({ where: { email } });
+
+      if (userExists) {
+        return handleError(res, { status: 409, message: 'User already exists' });
+      }
+
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const user = await User.create({
+        name,
+        email,
+        password: hashedPassword,
+        role
+      });
+
+      const token = generateAuthToken(user);
+      return res.json({ message: 'Admin Register success', token, name: user.name });
+    } catch (error) {
+      return handleError(res, error);
+    }
+  },
+
+  // Logout logic
+  logout: (req, res) => {
+    res.json({ message: 'Logout success' });
   }
-};
-
-// Register logic
-exports.register = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    const userExists = await User.findOne({ where: { email } });
-
-    if (userExists) {
-      return res.status(409).json({ message: 'User already exists' });
-    }
-
-    const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword
-    });
-
-    const token = generateAuthToken(user);
-    return res.json({ message: 'Register success', token, name: user.name });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Internal Server Error' });
-  }
-};
-
-// Logout logic
-exports.logout = (req, res) => {
-  // For token-based authentication, there's no need for explicit server-side logout
-  res.json({ message: 'Logout success' });
 };

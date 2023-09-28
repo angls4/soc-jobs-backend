@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
       // Many-to-Many association with jobs through applications
       User.belongsToMany(models.Job, {
         through: 'Application',
-        foreignKey: 'users_id',
+        foreignKey: 'userId',
+        otherKey: 'jobId',
         as: 'appliedJob',
       });
     }

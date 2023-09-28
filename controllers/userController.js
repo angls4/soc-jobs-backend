@@ -1,50 +1,35 @@
 const { User, Job } = require('../db/models');
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { promisify } = require('util');
-const unlinkAsync = promisify(fs.unlink);
-
-// Define storage for uploaded avatars
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'src/avatar/'); // Define the destination folder for avatars
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${req.user.id}${ext}`); // Use the user's ID as the avatar filename
-  },
-});
-
-// Define storage for uploaded CV files
-const cvStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'src/cv/'); // Define the destination folder for CV files
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${req.user.id}_cv${ext}`); // Use the user's ID as part of the CV filename
-  },
-});
-
-// Set up the multer upload middleware for avatars and CVs
-const uploadAvatar = multer({ storage: storage }).single('avatar');
-const uploadCV = multer({
-  storage: cvStorage,
-  fileFilter: (req, file, cb) => {
-    const allowedFileTypes = /pdf/; // Only allow PDF files
-    const ext = path.extname(file.originalname);
-    const isAllowed = allowedFileTypes.test(ext.toLowerCase());
-    if (isAllowed) {
-      return cb(null, true);
-    }
-    cb(new Error('Invalid file type. Only PDF files are allowed.'));
-  },
-}).single('cv');
+const { handleError } = require('../utils/errorHandler'); // Import the error handling function
+const UserPagination = require('../pagination/userPagination');
 
 module.exports = {
+  getAllUsers: async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+  
+      const usersQuery = User.findAll({
+        attributes: { exclude: ['password'] },
+      }); // Get all users
+  
+      const pagination = new UserPagination(usersQuery, page, limit);
+      const results = await pagination.getResults();
+  
+      return res.status(200).json({
+        code: 200,
+        status: 'OK',
+        message: 'Success getting paginated users',
+        data: results,
+      });
+    } catch (err) {
+      return handleError(res, err);
+    }
+  },
+  
+
   getProfile: async (req, res) => {
     try {
       const profile = await User.findOne({
@@ -69,13 +54,7 @@ module.exports = {
         },
       });
     } catch (err) {
-      return res.status(500).json({
-        code: 500,
-        status: 'Internal Server Error',
-        error: {
-          message: err.message,
-        },
-      });
+      return handleError(res, err);
     }
   },
 
@@ -113,20 +92,13 @@ module.exports = {
         },
       });
     } catch (err) {
-      return res.status(500).json({
-        code: 500,
-        status: 'Internal Server Error',
-        error: {
-          message: err.message,
-        },
-      });
+      return handleError(res, err);
     }
   },
 
   updateProfile: async (req, res) => {
-    const { id } = req.user;
-    const { name, email, password, gender, address, contact, cv } = req.body;
-    const user_image = req.file;
+    const { id } = req.params; // Use the ID from the route parameter
+    const { name, email, password, gender, address, contact } = req.body;
 
     try {
       const user = await User.findByPk(id);
@@ -145,7 +117,6 @@ module.exports = {
       user.gender = gender;
       user.address = address;
       user.contact = contact;
-      user.cv = cv;
 
       // Update user password if provided
       if (password) {
@@ -153,9 +124,9 @@ module.exports = {
         user.password = await bcrypt.hash(password, salt);
       }
 
-      // Update user image if provided
-      if (user_image) {
-        user.avatar = user_image.path; // Store the avatar path in the 'avatar' field
+      // Check if a CV file was uploaded
+      if (req.file) {
+        user.cv = req.file.filename; // Store the CV filename in the 'cv' field
       }
 
       await user.save();
@@ -166,23 +137,14 @@ module.exports = {
         message: 'Success update profile',
       });
     } catch (err) {
-      return res.status(500).json({
-        code: 500,
-        status: 'Internal Server Error',
-        error: {
-          message: err.message,
-        },
-      });
+      return handleError(res, err);
     }
   },
 
-  // Route to handle profile picture (avatar) upload
-  uploadAvatar: upload.single('avatar'), // 'avatar' is the field name in the form
-
-  // Route for handling profile picture uploads
-  uploadProfilePicture: async (req, res) => {
+  // Updated uploadAvatar function with Multer middleware
+  uploadAvatar: async (req, res) => {
     try {
-      // Check if a file was uploaded
+      // Check if a file was uploaded (Multer middleware adds 'file' to the request)
       if (!req.file) {
         return res.status(400).json({
           code: 400,
@@ -191,215 +153,79 @@ module.exports = {
         });
       }
 
-      // The file path where the avatar is saved (assuming you're storing it in 'src/avatar/')
-      const avatarPath = req.file.path;
+      const { id } = req.user;
 
-      // Perform any additional operations here, such as saving the file path to the user's profile
-      // For example:
-      // const userId = req.user.id;
-      // const user = await User.findByPk(userId);
-      // user.avatar = avatarPath;
-      // await user.save();
+      // Update the user's avatar path in the database
+      const user = await User.findByPk(id);
+      if (!user) {
+        return res.status(404).json({
+          code: 404,
+          status: 'Not Found',
+          message: 'User not found',
+        });
+      }
+
+      // Remove the previous avatar file if it exists
+      if (user.avatar) {
+        const avatarPath = path.join(__dirname, `../src/avatar/${user.avatar}`);
+        fs.unlinkSync(avatarPath);
+      }
+
+      user.avatar = req.file.filename; // Store the new avatar filename in the 'avatar' field
+      await user.save();
 
       return res.status(200).json({
         code: 200,
         status: 'OK',
         message: 'Profile picture uploaded successfully.',
-        avatarPath: avatarPath, // You can send the file path back in the response
+        avatarPath: user.avatar,
       });
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({
-        code: 500,
-        status: 'Internal Server Error',
-        error: {
-          message: err.message,
-        },
-      });
+      return handleError(res, err);
     }
   },
-  // Route to handle CV file upload
-  uploadCV: (req, res) => {
-    uploadCV(req, res, async (err) => {
-      if (err) {
+
+  // Updated uploadCV function with Multer middleware
+  uploadCV: async (req, res) => {
+    try {
+      // Check if a file was uploaded (Multer middleware adds 'file' to the request)
+      if (!req.file) {
         return res.status(400).json({
           code: 400,
           status: 'Bad Request',
-          message: err.message,
+          message: 'No file uploaded.',
         });
       }
 
-      try {
-        // Check if a file was uploaded
-        if (!req.file) {
-          return res.status(400).json({
-            code: 400,
-            status: 'Bad Request',
-            message: 'No file uploaded.',
-          });
-        }
+      const { id } = req.user;
 
-        // The file path where the CV is saved (assuming you're storing it in 'src/cv/')
-        const cvPath = req.file.path;
-
-        // Perform any additional operations here, such as saving the file path to the user's profile
-        // For example:
-        // const userId = req.user.id;
-        // const user = await User.findByPk(userId);
-        // user.cv = cvPath;
-        // await user.save();
-
-        return res.status(200).json({
-          code: 200,
-          status: 'OK',
-          message: 'CV uploaded successfully.',
-          cvPath: cvPath, // You can send the file path back in the response
-        });
-      } catch (err) {
-        console.error(err);
-        return res.status(500).json({
-          code: 500,
-          status: 'Internal Server Error',
-          error: {
-            message: err.message,
-          },
+      // Update the user's CV path in the database
+      const user = await User.findByPk(id);
+      if (!user) {
+        return res.status(404).json({
+          code: 404,
+          status: 'Not Found',
+          message: 'User not found',
         });
       }
-    });
+
+      // Remove the previous CV file if it exists
+      if (user.cv) {
+        const cvPath = path.join(__dirname, `../src/cv/${user.cv}`);
+        fs.unlinkSync(cvPath);
+      }
+
+      user.cv = req.file.filename; // Store the new CV filename in the 'cv' field
+      await user.save();
+
+      return res.status(200).json({
+        code: 200,
+        status: 'OK',
+        message: 'CV uploaded successfully.',
+        cvPath: user.cv,
+      });
+    } catch (err) {
+      return handleError(res, err);
+    }
   },
 };
-  // // Route to handle profile picture (avatar) upload
-  // uploadAvatar: upload.single('avatar'), // 'avatar' is the field name in the form
-
-  // // Route for handling profile picture uploads
-  // uploadProfilePicture: async (req, res) => {
-  //   try {
-  //     // Check if a file was uploaded
-  //     if (!req.file) {
-  //       return res.status(400).json({
-  //         code: 400,
-  //         status: 'Bad Request',
-  //         message: 'No file uploaded.',
-  //       });
-  //     }
-
-  //     // The file path where the avatar is saved (assuming you're storing it in 'src/avatar/')
-  //     const avatarPath = req.file.path;
-
-  //     // Perform any additional operations here, such as saving the file path to the user's profile
-  //     // For example:
-  //     // const userId = req.user.id;
-  //     // const user = await User.findByPk(userId);
-  //     // user.profile_image = avatarPath;
-  //     // await user.save();
-
-  //     return res.status(200).json({
-  //       code: 200,
-  //       status: 'OK',
-  //       message: 'Profile picture uploaded successfully.',
-  //       avatarPath: avatarPath, // You can send the file path back in the response
-  //     });
-  //   } catch (err) {
-  //     console.error(err);
-  //     return res.status(500).json({
-  //       code: 500,
-  //       status: 'Internal Server Error',
-  //       error: {
-  //         message: err.message,
-  //       },
-  //     });
-  //   }
-  // },
-
-  //   forgotPassword: async (req, res) => {
-//     const { email } = req.body;
-
-//     try {
-//       const user = await User.findOne({
-//         where: { email },
-//       });
-
-//       if (!user) {
-//         return res.status(404).json({
-//           code: 404,
-//           status: 'Not Found',
-//           message: 'Email not found',
-//         });
-//       }
-
-//       // Generate a reset token and send an email
-//       const token = jwt.sign(
-//         {
-//           email: user.email,
-//           id: user.id,
-//         },
-//         process.env.JWT_SECRET_KEY,
-//         {
-//           expiresIn: '5m',
-//         }
-//       );
-
-//       // Send an email with the reset token (you can implement this function)
-//       // await sendEmailForgotPassword(user.email, token);
-
-//       return res.status(200).json({
-//         code: 200,
-//         status: 'OK',
-//         message: 'Password reset token sent to your email',
-//       });
-//     } catch (err) {
-//       return res.status(500).json({
-//         code: 500,
-//         status: 'Internal Server Error',
-//         error: {
-//           message: err.message,
-//         },
-//       });
-//     }
-//   },
-//   resetPassword: async (req, res) => {
-//     const { token, new_password } = req.body;
-
-//     try {
-//       const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-
-//       if (!decoded) {
-//         return res.status(401).json({
-//           code: 401,
-//           status: 'Unauthorized',
-//           message: 'Token is invalid',
-//         });
-//       }
-
-//       const user = await User.findByPk(decoded.id);
-
-//       if (!user) {
-//         return res.status(404).json({
-//           code: 404,
-//           status: 'Not Found',
-//           message: 'User not found',
-//         });
-//       }
-
-//       // Update user password
-//       const salt = await bcrypt.genSalt();
-//       user.password = await bcrypt.hash(new_password, salt);
-
-//       await user.save();
-
-//       return res.status(200).json({
-//         code: 200,
-//         status: 'OK',
-//         message: 'Password reset successful',
-//       });
-//     } catch (err) {
-//       return res.status(500).json({
-//         code: 500,
-//         status: 'Internal Server Error',
-//         error: {
-//           message: err.message,
-//         },
-//       });
-//     }
-//   },
-// };

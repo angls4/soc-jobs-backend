@@ -6,6 +6,7 @@ soc.jobs/
 |   |-- authController.js
 |   |-- googleAuthController.js
 |   |-- userController.js
+|   |-- jobController.js
 |-- db/
 |   |-- migrations/
 |   |-- models/
@@ -19,13 +20,19 @@ soc.jobs/
 |   |-- seeders
 |-- middleware/
 |   |-- auth.js
+|-- pagination/
+|   |-- jobPagination.js
+|   |-- userPagination.js
 |-- route/
 |   |-- auth.route.js
 |   |-- index.js
 |   |-- user.route.js
+|   |-- job.route.js
 |  src/
 |   |-- avatar/
 |   |-- logo/
 |   |-- cv/
+|-- utils/
+|   |-- errorHandler.js
 |-- app.js
 |-- .env
