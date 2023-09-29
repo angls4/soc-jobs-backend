@@ -12,8 +12,8 @@ router.use('/auth', authRoute);
 // Route to the user router
 router.use('/user', verifiedToken, userRoute);
 
-// Route to the admin router
-router.use('/admin', verifiedToken, adminRoute);
+// // Route to the admin router
+// router.use('/admin', verifiedToken, adminRoute);
 
 // Route to the job router
 router.use('/job', verifiedToken, jobRoute);

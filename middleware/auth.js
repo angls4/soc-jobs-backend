@@ -12,9 +12,13 @@ const verifiedToken = (req, res, next) => {
   const tokenValue = token.slice(7);
 
   try {
-    // Verify the token with your JWT secret
     const verified = jwt.verify(tokenValue, process.env.JWT_SECRET);
+    console.log('Decoded Token:', verified); // Line for debugging
     req.user = verified;
+
+    // Add this line to log the token payload
+    console.log('Token Payload:', verified);
+    
     next();
   } catch (err) {
     console.error(err);

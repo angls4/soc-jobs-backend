@@ -35,60 +35,62 @@ module.exports = {
     }
   },
 
-  // User Register logic
-  userRegister: async (req, res) => {
-    try {
-      const { name, email, password } = req.body;
-      const userExists = await User.findOne({ where: { email } });
+// User Register logic
+userRegister: async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const userExists = await User.findOne({ where: { email } });
 
-      if (userExists) {
-        return handleError(res, { status: 409, message: 'User already exists' });
-      }
-
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const user = await User.create({
-        name,
-        email,
-        password: hashedPassword
-      });
-
-      const token = generateAuthToken(user);
-      return res.json({ message: 'Register success', token, name: user.name });
-    } catch (error) {
-      return handleError(res, error);
+    if (userExists) {
+      return handleError(res, { status: 409, message: 'User already exists' });
     }
-  },
 
-  // Admin Register logic
-  adminRegister: async (req, res) => {
-    try {
-      const { name, email, password } = req.body;
-      const role = 'Admin';
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-      const userExists = await User.findOne({ where: { email } });
+    // Assign the 'User' role to the user being registered
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'User', // Assign the 'User' role
+    });
 
-      if (userExists) {
-        return handleError(res, { status: 409, message: 'User already exists' });
-      }
+    const token = generateAuthToken(user);
+    return res.json({ message: 'Register success', token, name: user.name });
+  } catch (error) {
+    return handleError(res, error);
+  }
+},
 
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(password, salt);
+// Admin Register logic
+adminRegister: async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    const userExists = await User.findOne({ where: { email } });
 
-      const user = await User.create({
-        name,
-        email,
-        password: hashedPassword,
-        role
-      });
-
-      const token = generateAuthToken(user);
-      return res.json({ message: 'Admin Register success', token, name: user.name });
-    } catch (error) {
-      return handleError(res, error);
+    if (userExists) {
+      return handleError(res, { status: 409, message: 'User already exists' });
     }
-  },
+
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Assign the 'Admin' role to the user being registered
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      role: 'Admin', // Assign the 'Admin' role
+    });
+
+    const token = generateAuthToken(user);
+    return res.json({ message: 'Admin Register success', token, name: user.name });
+  } catch (error) {
+    return handleError(res, error);
+  }
+},
+
 
   // Logout logic
   logout: (req, res) => {

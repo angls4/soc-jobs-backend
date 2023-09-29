@@ -1,11 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
-const verifiedToken = require('../middleware/auth');
 const { uploadAvatar, uploadCV } = require('../config/multerConfig');
 
-// Middleware for authentication
-router.use(verifiedToken);
 
 // Routes for user-related actions
 router.get('/', userController.getAllUsers);

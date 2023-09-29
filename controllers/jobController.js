@@ -1,6 +1,6 @@
 const { Job, User, Application } = require('../db/models');
 const { handleError } = require('../utils/errorHandler'); // Import the error handling function
-const Pagination = require('../pagination/jobPagination');
+const { ValidationError } = require('sequelize');
 
 
 module.exports = {
@@ -9,23 +9,38 @@ module.exports = {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
   
-      const jobsQuery = Job.findAll(); // Get all jobs
+      // Use Sequelize's findAndCountAll for pagination
+      const { count, rows: jobs } = await Job.findAndCountAll({
+        limit,
+        offset: (page - 1) * limit,
+      });
   
-      const pagination = new Pagination(jobsQuery, page, limit);
-      const results = await pagination.getResults();
+      const totalPages = Math.ceil(count / limit);
   
       return res.status(200).json({
         code: 200,
         status: 'OK',
         message: 'Success getting paginated jobs',
-        data: results,
+        data: {
+          jobs,
+          totalJobs: count,
+          totalPages,
+          currentPage: page,
+        },
       });
     } catch (err) {
+      if (err instanceof ValidationError) {
+        return res.status(400).json({
+          code: 400,
+          status: 'Bad Request',
+          message: 'Validation Error',
+          errors: err.errors,
+        });
+      }
       return handleError(res, err);
     }
   },
   
-
   getJobById: async (req, res) => {
     const { id } = req.params;
     try {
@@ -58,7 +73,7 @@ module.exports = {
           message: 'You do not have permission to create a job.',
         });
       }
-      
+
       const job = await Job.create(req.body);
       return res.status(201).json({
         code: 201,
@@ -82,7 +97,7 @@ module.exports = {
           message: 'You do not have permission to update a job.',
         });
       }
-      
+
       const [updated] = await Job.update(req.body, {
         where: { id },
       });
@@ -116,7 +131,7 @@ module.exports = {
           message: 'You do not have permission to delete a job.',
         });
       }
-      
+
       const deleted = await Job.destroy({
         where: { id },
       });

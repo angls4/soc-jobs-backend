@@ -1,6 +1,5 @@
 const express = require('express');
-const { Router } = require('express');
-const router = Router();
+const router = express.Router();
 const jobController = require('../controllers/jobController');
 
 // Route to get all jobs listed

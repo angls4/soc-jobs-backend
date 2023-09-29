@@ -3,32 +3,47 @@ const bcrypt = require('bcrypt');
 const path = require('path');
 const fs = require('fs');
 const { handleError } = require('../utils/errorHandler'); // Import the error handling function
-const UserPagination = require('../pagination/userPagination');
+const { ValidationError } = require('sequelize');
+
 
 module.exports = {
   getAllUsers: async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
-  
-      const usersQuery = User.findAll({
+
+      // Use Sequelize's findAndCountAll for pagination
+      const { count, rows: users } = await User.findAndCountAll({
         attributes: { exclude: ['password'] },
-      }); // Get all users
-  
-      const pagination = new UserPagination(usersQuery, page, limit);
-      const results = await pagination.getResults();
-  
+        limit,
+        offset: (page - 1) * limit,
+      });
+
+      const totalPages = Math.ceil(count / limit);
+
       return res.status(200).json({
         code: 200,
         status: 'OK',
         message: 'Success getting paginated users',
-        data: results,
+        data: {
+          users,
+          totalUsers: count,
+          totalPages,
+          currentPage: page,
+        },
       });
     } catch (err) {
+      if (err instanceof ValidationError) {
+        return res.status(400).json({
+          code: 400,
+          status: 'Bad Request',
+          message: 'Validation Error',
+          errors: err.errors,
+        });
+      }
       return handleError(res, err);
     }
   },
-  
 
   getProfile: async (req, res) => {
     try {

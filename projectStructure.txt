@@ -20,9 +20,6 @@ soc.jobs/
 |   |-- seeders
 |-- middleware/
 |   |-- auth.js
-|-- pagination/
-|   |-- jobPagination.js
-|   |-- userPagination.js
 |-- route/
 |   |-- auth.route.js
 |   |-- index.js
