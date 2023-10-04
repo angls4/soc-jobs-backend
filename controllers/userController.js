@@ -8,10 +8,17 @@ const { crudController } = require('../utils/crud');
 const attributes = {exclude:['password']};
 
 module.exports = {
-  getAll: crudController.getAll(User, [], attributes),
+  attributes,
+  getAll: async (req, res) => {
+    return await crudController.getAll(User, {
+      where: {},
+      attributes,
+      paginated: true,
+    })(req, res);
+  },
   getById: async (req, res) => {
     const id = req.params.id ?? req.user.id; // Use the ID from the route parameter or token's user Id
-    return await crudController.getById(User, id, [], attributes)(req, res);
+    return await crudController.getById(User, {attributes}, id)(req, res);
   },
   update: async (req, res) => {
     const id = req.params.id ?? req.user.id; // Use the ID from the route parameter or token's user Id
@@ -29,7 +36,7 @@ module.exports = {
       const salt = await bcrypt.genSalt();
       data.password = await bcrypt.hash(data.password, salt);
     }
-    return await crudController.update(User, id, data)(req, res);
+    return await crudController.update(User,{attributes}, id, data)(req, res);
   },
 
   // Updated uploadAvatar function with Multer middleware

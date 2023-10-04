@@ -21,9 +21,15 @@ const include = [
 
 module.exports = {
   include,
-  getAll: crudController.getAll(Job,include),
-  getById: crudController.getById(Job,undefined,include),
+  getAll: async (req, res) => {
+    return await crudController.getAll(Job, {
+      where: {},
+      include,
+      paginated: true,
+    })(req, res);
+  },
+  getById: crudController.getById(Job,{ include }),
   create: crudController.create(Job),
-  update: crudController.update(Job,undefined,undefined,include),
+  update: crudController.update(Job, { include }),
   delete: crudController.delete(Job),
 };

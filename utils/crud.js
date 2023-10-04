@@ -1,82 +1,100 @@
 const { handleError } = require("../utils/errorHandler"); // Import the error handling function
 
+const defaultPageLimit = 10;
+
 const crudController = {
-  getAllBy: (model, where = {}, include = [], attributes, f) => {
+  getAll: (model, options = {}) => {
+    const { where = {}, include = [], attributes, paginated = false } = options;
     return async (req, res) => {
       try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        let pageOptions = {},
+          page,
+          limit;
+        if (paginated) {
+          page = parseInt(req.query.page) || 1;
+          limit = parseInt(req.query.limit) || defaultPageLimit;
+          pageOptions.limit = limit;
+          pageOptions.offset = (page - 1) * limit;
+        }
 
         // Use Sequelize's findAndCountAll for pagination
         const { count, rows } = await model.findAndCountAll({
           where,
-          limit,
-          offset: (page - 1) * limit,
           include,
           attributes,
+          ...pageOptions,
         });
 
-        const totalPages = Math.ceil(count / limit);
-
+        const f =
+          options.f ??
+          ((req, res, rows) => {
+            return {
+              rows,
+              totalRows: count,
+            };
+          });
+        const data = await f(req, res, rows);
+        if (paginated) {
+          const totalPages = Math.ceil(count / limit);
+          data.totalPages = totalPages;
+          data.currentPage = page;
+        }
         return res.status(200).json({
           code: 200,
           status: "OK",
-          message: `Success getting paginated ${model.name}s`,
-          data: {
-            rows,
-            totalRows: count,
-            totalPages,
-            currentPage: page,
-          },
+          message: `Success getting ${paginated ? "paginated " : ""}${
+            model.name
+          }(s)`,
+          data,
         });
       } catch (err) {
         return handleError(res, err);
       }
     };
   },
-  getAll: (model, include = [], attributes, f) => {
+  getPaginated: (model, options = {}) => {
     return async (req, res) => {
-      return await crudController.getAllBy(
-        model,
-        {},
-        include,
-        attributes,
-        f
-      )(req, res);
+      options["paginated"] = true;
+      return await crudController.getAll(model, options)(req, res);
     };
   },
 
-  getById: (model,id=undefined, include = [], attributes, f) => {
+  getById: (model, options = {}, id) => {
     return async (req, res) => {
       id ??= req.params.id;
-      try {
-        const row = await model.findByPk(id, {
-          include,
-          attributes,
-        });
-        if (!row) {
-          return res.status(404).json({
-            code: 404,
-            status: "Not Found",
-            message: `${model.name} not found, finding ${id}`,
-          });
-        }
-        return res.status(200).json({
-          code: 200,
-          status: "OK",
-          message: `Success getting ${model.name} by ID`,
-          data: row, // Return the row directly
-        });
-      } catch (err) {
-        return handleError(res, err); // Handle errors using the handleError function
-      }
+      options.where = { id };
+      options.f = (req, res, data) => data[0];
+      return await crudController.getAll(model, options)(req, res);
     };
+    // return async (req, res) => {
+    //   id ??= req.params.id;
+    //   try {
+    //     const row = await model.findByPk(id, {
+    //       include,
+    //       attributes,
+    //     });
+    //     if (!row) {
+    //       return res.status(404).json({
+    //         code: 404,
+    //         status: "Not Found",
+    //         message: `${model.name} not found, finding ${id}`,
+    //       });
+    //     }
+    //     return res.status(200).json({
+    //       code: 200,
+    //       status: "OK",
+    //       message: `Success getting ${model.name} by ID`,
+    //       data: row, // Return the row directly
+    //     });
+    //   } catch (err) {
+    //     return handleError(res, err); // Handle errors using the handleError function
+    //   }
+    // };
   },
 
-  create: (model, f) => {
+  create: (model, data) => {
     return async (req, res) => {
-      f ??= (req, res) => req.body;
-      const data = await f(req, res);
+      data ??= req.body;
       try {
         const row = await model.create(data);
         return res.status(201).json({
@@ -91,7 +109,8 @@ const crudController = {
     };
   },
 
-  update: (model, id = undefined, data=undefined, include) => {
+  update: (model, options = {}, id, data) => {
+    const { include, attributes } = options;
     return async (req, res) => {
       id ??= req.params.id;
       data ??= req.body;
@@ -107,8 +126,9 @@ const crudController = {
             message: `${model.name} not found, finding ${id}`,
           });
         }
-        const row = await model.findByPk(id,{
-          include
+        const row = await model.findByPk(id, {
+          include,
+          attributes,
         });
         return res.status(200).json({
           code: 200,
@@ -122,7 +142,7 @@ const crudController = {
     };
   },
 
-  delete: (model, id = undefined) => {
+  delete: (model, id) => {
     return async (req, res) => {
       id ??= req.params.id;
 
