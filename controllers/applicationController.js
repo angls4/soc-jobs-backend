@@ -1,29 +1,44 @@
-const { Application, Job, User } = require('../db/models');
+const { Application, Job, User, Position, Experience } = require("../db/models");
 const { crudController } = require("../utils/crud");
 const userController = require("./userController");
 const jobController = require("./jobController");
 
+const attributes = ["status", "updatedAt"];
 const includeUser = {
   model: User,
   as: "User",
-  attributes: userController.attributes,
+  attributes: ["name"],
+  // attributes: userController.attributes,
 };
 const includeJob = {
   model: Job,
   as: "Job",
-  include:jobController.include
+  attributes: ["title"],
+  // include:jobController.include
+  include: [
+    {
+      model: Position,
+      as: "jobPosition",
+      attributes: ["position_name"],
+    },
+    {
+      model: Experience,
+      as: "jobExperience",
+      attributes: ["exp_desc"],
+    },
+  ],
 };
-const include = [
-  includeUser,
-  includeJob
-];
+const include = [includeUser, includeJob];
 
 module.exports = {
+  includeUser,
+  includeJob,
+  attributes,
   getAll: async (req, res) => {
     return await crudController.getAll(Application, {
       where: {},
       include,
-      paginated:true
+      paginated: true,
     })(req, res);
   },
   getById: crudController.getById(Application, { include }),
@@ -32,6 +47,7 @@ module.exports = {
     return await crudController.getAll(Application, {
       where: { userId: id },
       include: includeJob,
+      attributes,
     })(req, res);
   },
   getByJobId: async (req, res) => {
@@ -39,9 +55,10 @@ module.exports = {
     return await crudController.getAll(Application, {
       where: { jobId: id },
       include: includeUser,
+      attributes,
     })(req, res);
   },
   create: crudController.create(Application),
-  update: crudController.update(Application,{ include }),
+  update: crudController.update(Application, { include }),
   delete: crudController.delete(Application),
 };

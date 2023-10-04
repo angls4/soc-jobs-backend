@@ -4,7 +4,7 @@ const defaultPageLimit = 10;
 
 const crudController = {
   getAll: (model, options = {}) => {
-    const { where = {}, include = [], attributes, paginated = false } = options;
+    const { where = {}, include = [], attributes, paginated = false, raw=false,nest=true } = options;
     return async (req, res) => {
       try {
         let pageOptions = {},
@@ -22,6 +22,8 @@ const crudController = {
           where,
           include,
           attributes,
+          raw,
+          nest,
           ...pageOptions,
         });
 
@@ -34,6 +36,8 @@ const crudController = {
             };
           });
         const data = await f(req, res, rows);
+        console.log('data')
+        console.log(data)
         if (paginated) {
           const totalPages = Math.ceil(count / limit);
           data.totalPages = totalPages;
@@ -63,7 +67,9 @@ const crudController = {
     return async (req, res) => {
       id ??= req.params.id;
       options.where = { id };
-      options.f = (req, res, data) => data[0];
+      options.f ??= (req, res, data) => data;
+      const ff = options.f;
+      options.f = async (req, res, data) => (await ff(req, res, data))[0];
       return await crudController.getAll(model, options)(req, res);
     };
   },
@@ -86,7 +92,7 @@ const crudController = {
   },
 
   update: (model, options = {}, id, data) => {
-    const { include, attributes } = options;
+    const { include, attributes, raw=false,nest=true } = options;
     return async (req, res) => {
       id ??= req.params.id;
       data ??= req.body;

@@ -1,11 +1,18 @@
-const { User } = require('../db/models');
-const bcrypt = require('bcrypt');
-const path = require('path');
-const fs = require('fs');
-const { handleError } = require('../utils/errorHandler'); // Import the error handling function
-const { crudController } = require('../utils/crud');
+const {
+  User,
+  // Job,
+  // Position,
+  // Experience,
+  // Application,
+} = require("../db/models");
+const bcrypt = require("bcrypt");
+const path = require("path");
+const fs = require("fs");
+const { handleError } = require("../utils/errorHandler"); // Import the error handling function
+const { crudController } = require("../utils/crud");
+const applicationController = require("./applicationController");
 
-const attributes = {exclude:['password']};
+const attributes = { exclude: ["password"] };
 
 module.exports = {
   attributes,
@@ -18,7 +25,27 @@ module.exports = {
   },
   getById: async (req, res) => {
     const id = req.params.id ?? req.user.id; // Use the ID from the route parameter or token's user Id
-    return await crudController.getById(User, {attributes}, id)(req, res);
+    return await crudController.getById(
+      User,
+      {
+        attributes,
+        // raw: true,
+        // f:(async (req, res, rows) => {
+        //   for (const [key,row] of Object.entries(rows)) {
+        //     row["applications"] = await Application.findAll({
+        //       where: { userId: id },
+        //       include: applicationController.includeJob,
+        //       raw: true,
+        //       nest:true,
+        //       attributes: applicationController.attributes,
+        //     });
+        //   }
+        //   console.log(rows[0])
+        //   return rows;
+        // }),
+      },
+      id
+    )(req, res);
   },
   update: async (req, res) => {
     const id = req.params.id ?? req.user.id; // Use the ID from the route parameter or token's user Id
@@ -36,7 +63,12 @@ module.exports = {
       const salt = await bcrypt.genSalt();
       data.password = await bcrypt.hash(data.password, salt);
     }
-    return await crudController.update(User,{attributes}, id, data)(req, res);
+    return await crudController.update(
+      User,
+      { attributes },
+      id,
+      data
+    )(req, res);
   },
 
   // Updated uploadAvatar function with Multer middleware

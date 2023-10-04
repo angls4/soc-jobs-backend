@@ -22,8 +22,10 @@ const include = [
 module.exports = {
   include,
   getAll: async (req, res) => {
+    // const filter = req.params;
+    const filter = {};
     return await crudController.getAll(Job, {
-      where: {},
+      where: filter,
       include,
       paginated: true,
     })(req, res);
