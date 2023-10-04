@@ -1,14 +1,12 @@
 # Installed Node.js packages
 node_modules
 
-# NPM Package
+# NPM / PNPM Package lock
 package-lock.json
+pnpm-lock.yaml
 
 # dotenv environment variables file
 .env
 
-# uploaded files
-src/cv/*
-src/avatar/*
-
+# vscode Local History extension
 .history
