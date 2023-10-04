@@ -3,9 +3,9 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
 // Configs
-const expiresIn = '5m';
-const cooldownMs = 10000;
-const cleanInterval = 10000;
+const expiresIn = '6m'; // link expiration time
+const resendCooldown = 60000; // resend email cooldown in Milliseconds
+const cleanInterval = 300000; // tokenstore cleaning interval in Milliseconds
 
 const {
   SMTP_HOST,
@@ -50,7 +50,7 @@ const verifyAndInvalidateLatestToken = (email, token) => {
 };
 
 const sendAuthEmail = async (req,res,name,data, email, hostUrl, getText) => {
-  const emailerResult = await create(data, email, hostUrl, getText);
+  const emailerResult = await createLink(data, email, hostUrl, getText);
   if (emailerResult === "success")
     return res.status(200).json({
       message: `${name} email sent`,
@@ -80,17 +80,17 @@ const sendEmail = (mailOptions) => {
   });
 };
 
-const create = async (data,email,hostUrl,getText) => {
+const createLink = async (data,email,hostUrl,getText) => {
   const token = jwt.sign(data, process.env.JWT_SECRET,{expiresIn});
   if(tokenStore[email]){
     const iat = jwt.decode(tokenStore[email]).iat*1000;
     const now = new Date().getTime();
     const diff = now - iat;
     console.log(diff)
-    if (diff < cooldownMs) return cooldownMs - diff;
+    if (diff < resendCooldown) return resendCooldown - diff;
   }
   return await sendEmail(
-    { ...mailOptions, to: email, text: getText(hostUrl,token) },
+    { ...mailOptions, to: email, html: getText(hostUrl,token) },
     email,
     hostUrl,
     token
@@ -130,11 +130,11 @@ const cleanExpired = ()=>{
   setTimeout(cleanExpired,cleanInterval)
 }
 
-cleanExpired();
+cleanExpired(); // start clean interval loop
 
 // Module Exports
 module.exports = {
-  create,
+  createLink,
   sendAuthEmail,
   verifyAndInvalidateLatestToken,
 };

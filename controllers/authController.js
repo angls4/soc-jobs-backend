@@ -5,6 +5,8 @@ const { handleError } = require('../utils/errorHandler');
 const { sendAuthEmail,verifyAndInvalidateLatestToken } = require('../utils/emailer');
 const { crudController } = require('../utils/crud');
 const userController = require("./userController");
+const fs = require("fs");
+const ejs = require("ejs");
 
 // Function to generate JWT token
 const generateAuthToken = (user) => {
@@ -15,11 +17,16 @@ const generateAuthToken = (user) => {
   });
 };
 
+const verifyEmailTemplate = fs.readFileSync("./src/emails/verifyEmail.html", { encoding: "utf-8" });
+const passwordResetTemplate = fs.readFileSync("./src/emails/passwordReset.html", { encoding: "utf-8" });
+
 const getVerifyEmailText = (hostUrl, token) => {
-  return `link verifikasi - ${hostUrl}/auth/verify/${token}`;
+  return ejs.render(verifyEmailTemplate,{hostUrl,token});
+  // return `link verifikasi - ${hostUrl}/auth/verify/${token}`;
 };
 const getResetEmailText = (hostUrl, token) => {
-  return `link reset password - ${hostUrl}/auth/reset/${token}`;
+  return ejs.render(passwordResetTemplate, { hostUrl, token });
+  // return `link reset password - ${hostUrl}/auth/reset/${token}`;
 };
 
 const sendVerifyEmail = async (req,res, userData)=>{
