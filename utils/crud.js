@@ -66,30 +66,6 @@ const crudController = {
       options.f = (req, res, data) => data[0];
       return await crudController.getAll(model, options)(req, res);
     };
-    // return async (req, res) => {
-    //   id ??= req.params.id;
-    //   try {
-    //     const row = await model.findByPk(id, {
-    //       include,
-    //       attributes,
-    //     });
-    //     if (!row) {
-    //       return res.status(404).json({
-    //         code: 404,
-    //         status: "Not Found",
-    //         message: `${model.name} not found, finding ${id}`,
-    //       });
-    //     }
-    //     return res.status(200).json({
-    //       code: 200,
-    //       status: "OK",
-    //       message: `Success getting ${model.name} by ID`,
-    //       data: row, // Return the row directly
-    //     });
-    //   } catch (err) {
-    //     return handleError(res, err); // Handle errors using the handleError function
-    //   }
-    // };
   },
 
   create: (model, data) => {

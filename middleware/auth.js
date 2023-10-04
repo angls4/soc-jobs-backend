@@ -1,5 +1,4 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../db/models');
 
 const handleInvalidToken = (res) => {
   return res.status(401).json({ message: "Access Denied - Invalid Token" });
@@ -28,6 +27,7 @@ module.exports = {
 
       // Add this line to log the token payload
       console.log("Token Payload:", verified);
+      // console.log("Token Payload:", new Date().getTime());
 
       next();
     } catch (err) {
@@ -37,7 +37,7 @@ module.exports = {
   },  
   adminToken : async (req, res, next) => {
       if (req.user.role !== "Admin")
-        return handleInvalidToken(res);
+        return res.status(403).json({ status:'forbidden',message: "Access Denied - You don't have permission" });
         // throw `user ${verified.id} role is ${verified.role}, not admin`;
       next();
   }

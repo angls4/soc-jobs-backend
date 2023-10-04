@@ -6,6 +6,7 @@ module.exports = {
   getAll: async (req, res) => {
     return await crudController.getAll(Type, {
       where: {},
+      attributes: { exclude: ["createdAt", "updatedAt"] },
     })(req, res);
   },
   // getById: crudController.getById(Type),

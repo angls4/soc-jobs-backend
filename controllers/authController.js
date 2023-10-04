@@ -2,6 +2,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { User } = require('../db/models');
 const { handleError } = require('../utils/errorHandler');
+const { sendAuthEmail,verifyAndInvalidateLatestToken } = require('../utils/emailer');
+const { crudController } = require('../utils/crud');
+const userController = require("./userController");
 
 // Function to generate JWT token
 const generateAuthToken = (user) => {
@@ -12,6 +15,43 @@ const generateAuthToken = (user) => {
   });
 };
 
+const getVerifyEmailText = (hostUrl, token) => {
+  return `link verifikasi - ${hostUrl}/auth/verify/${token}`;
+};
+const getResetEmailText = (hostUrl, token) => {
+  return `link reset password - ${hostUrl}/auth/reset/${token}`;
+};
+
+const sendVerifyEmail = async (req,res, userData)=>{
+    const {email} = req.body;
+    const hostUrl = `${req.protocol}://${req.get("host")}`;
+    return await sendAuthEmail(req,res,'Verification',userData,email, hostUrl, getVerifyEmailText);
+}
+const sendResetEmail = async (req,res)=>{
+    const {email} = req.body;
+    const hostUrl = `${req.protocol}://${req.get("host")}`;
+    const user = await User.findOne({
+      where: { email },
+      attributes: userController.attributes,
+      raw: true,
+    });
+    if (user) {
+      return await sendAuthEmail(
+        req,
+        res,
+        "Password reset",
+        user,
+        email,
+        hostUrl,
+        getResetEmailText
+      );
+    }
+    return handleError(res, {
+      status: 404,
+      message: "User not found",
+    });
+}
+
 module.exports = {
   // Login logic
   login: async (req, res) => {
@@ -20,83 +60,143 @@ module.exports = {
       const user = await User.findOne({ where: { email } });
 
       if (!user) {
-        return handleError(res, { status: 404, message: 'User not found' });
+        return handleError(res, { status: 404, message: "User not found" });
       }
 
       const isPasswordMatch = await bcrypt.compare(password, user.password);
       // const isPasswordMatch = password == user.password;
-      console.log(`password ${password}, dbpassword ${user.password}`)
+      console.log(`password ${password}, dbpassword ${user.password}`);
 
       if (!isPasswordMatch) {
-        return handleError(res, { status: 401, message: 'Wrong password' });
+        return handleError(res, { status: 401, message: "Wrong password" });
       }
 
       const token = generateAuthToken(user);
-      return res.json({ message: 'Login success', token, name: user.name });
+      return res.json({ message: "Login success", token, name: user.name });
     } catch (error) {
       return handleError(res, error);
     }
   },
 
-// User Register logic
-userRegister: async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    const userExists = await User.findOne({ where: { email } });
+  // User Register logic
+  userRegister: async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const userExists = await User.findOne({ where: { email } });
 
-    if (userExists) {
-      return handleError(res, { status: 409, message: 'User already exists' });
+      if (userExists) {
+        return handleError(res, {
+          status: 409,
+          message: "User already exists",
+        });
+      }
+
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const data = {
+        name,
+        email,
+        password: hashedPassword,
+        role: "User", // Assign the 'User' role
+      };
+      return await sendVerifyEmail(req,res,data);
+      // Assign the 'User' role to the user being registered
+      // const user = await User.create(data);
+
+      // const token = generateAuthToken(user);
+      // return res.json({ message: "Register success", token, name: user.name });
+    } catch (error) {
+      return handleError(res, error);
     }
+  },
 
-    const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(password, salt);
+  // Admin Register logic
+  adminRegister: async (req, res) => {
+    try {
+      const { name, email, password } = req.body;
+      const userExists = await User.findOne({ where: { email } });
 
-    // Assign the 'User' role to the user being registered
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: 'User', // Assign the 'User' role
-    });
+      if (userExists) {
+        return handleError(res, {
+          status: 409,
+          message: "User already exists",
+        });
+      }
 
-    const token = generateAuthToken(user);
-    return res.json({ message: 'Register success', token, name: user.name });
-  } catch (error) {
-    return handleError(res, error);
-  }
-},
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-// Admin Register logic
-adminRegister: async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-    const userExists = await User.findOne({ where: { email } });
+      const data = {
+        name,
+        email,
+        password: hashedPassword,
+        role: "Admin", // Assign the 'Admin' role
+      };
+      return await sendVerifyEmail(req, res, data); 
+      // Assign the 'Admin' role to the user being registered
+      // const user = await User.create();
 
-    if (userExists) {
-      return handleError(res, { status: 409, message: 'User already exists' });
+      // const token = generateAuthToken(user);
+      // return res.json({
+      //   message: "Admin Register success",
+      //   token,
+      //   name: user.name,
+      // });
+    } catch (error) {
+      return handleError(res, error);
     }
-
-    const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Assign the 'Admin' role to the user being registered
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      role: 'Admin', // Assign the 'Admin' role
-    });
-
-    const token = generateAuthToken(user);
-    return res.json({ message: 'Admin Register success', token, name: user.name });
-  } catch (error) {
-    return handleError(res, error);
-  }
-},
-
+  },
 
   // Logout logic
   logout: (req, res) => {
-    res.json({ message: 'Logout success' });
-  }
+    res.json({ message: "Logout success" });
+    // res.json({ message: "Logout success" });
+  },
+
+  resetPassword: async (req, res) => {
+    const { token } = req.params;
+    console.log(token)
+    if (token) {
+      try {
+        const { id,email } = jwt.verify(token, process.env.JWT_SECRET);
+        const { password } = req.body;
+        if (!verifyAndInvalidateLatestToken(email, token))
+          return res.status(400).json({ message: "Token expired" });
+        return await crudController.update(
+          User,
+          { attributes: userController.attributes },
+          Number(id),
+          { password }
+        )(req,res);
+      } catch (err) {
+        return handleError(res, err); // Handle errors using the handleError function
+      }
+    }
+    return await sendResetEmail(req, res);
+  },
+  verifyEmail: async (req, res) => {
+    const { token } = req.params;
+    console.log(token)
+    if (token) {
+      try {
+        const data = jwt.verify(token, process.env.JWT_SECRET);
+        if(!verifyAndInvalidateLatestToken(data.email,token)) return res.status(400).json({message:'Token expired'});
+
+        // Assign the 'User' role to the user being registered
+        const user = await User.create(data);
+
+        const authToken = generateAuthToken(user);
+        return res.json({
+          message: "Register and email verification success",
+          token: authToken,
+          name: user.name,
+        });
+      } catch (error) {
+        return handleError(res, error);
+      }
+    }
+    return res.status(404).json({message:'invalid token'})
+    // return await sendVerifyEmail(req, res);
+  },
 };
