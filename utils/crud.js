@@ -1,7 +1,7 @@
 const { handleError } = require("../utils/errorHandler"); // Import the error handling function
 
 const crudController = {
-  getAll: (model, include = []) => {
+  getAllBy: (model, where = {}, include = [], attributes, f) => {
     return async (req, res) => {
       try {
         const page = parseInt(req.query.page) || 1;
@@ -9,9 +9,11 @@ const crudController = {
 
         // Use Sequelize's findAndCountAll for pagination
         const { count, rows } = await model.findAndCountAll({
+          where,
           limit,
           offset: (page - 1) * limit,
           include,
+          attributes,
         });
 
         const totalPages = Math.ceil(count / limit);
@@ -32,19 +34,31 @@ const crudController = {
       }
     };
   },
-
-  getById: (model, include = []) => {
+  getAll: (model, include = [], attributes, f) => {
     return async (req, res) => {
-      const { id } = req.params;
+      return await crudController.getAllBy(
+        model,
+        {},
+        include,
+        attributes,
+        f
+      )(req, res);
+    };
+  },
+
+  getById: (model,id=undefined, include = [], attributes, f) => {
+    return async (req, res) => {
+      id ??= req.params.id;
       try {
         const row = await model.findByPk(id, {
           include,
+          attributes,
         });
         if (!row) {
           return res.status(404).json({
             code: 404,
             status: "Not Found",
-            message: `${model.name} not found`,
+            message: `${model.name} not found, finding ${id}`,
           });
         }
         return res.status(200).json({
@@ -59,10 +73,12 @@ const crudController = {
     };
   },
 
-  create: (model) => {
+  create: (model, f) => {
     return async (req, res) => {
+      f ??= (req, res) => req.body;
+      const data = await f(req, res);
       try {
-        const row = await model.create(req.body);
+        const row = await model.create(data);
         return res.status(201).json({
           code: 201,
           status: "Created",
@@ -75,22 +91,25 @@ const crudController = {
     };
   },
 
-  update: (model) => {
+  update: (model, id = undefined, data=undefined, include) => {
     return async (req, res) => {
-      const { id } = req.params;
+      id ??= req.params.id;
+      data ??= req.body;
 
       try {
-        const [updated] = await model.update(req.body, {
+        const [updated] = await model.update(data, {
           where: { id },
         });
         if (!updated) {
           return res.status(404).json({
             code: 404,
             status: "Not Found",
-            message: `${model.name} not found`,
+            message: `${model.name} not found, finding ${id}`,
           });
         }
-        const row = await model.findByPk(id);
+        const row = await model.findByPk(id,{
+          include
+        });
         return res.status(200).json({
           code: 200,
           status: "OK",
@@ -103,9 +122,9 @@ const crudController = {
     };
   },
 
-  delete: (model) => {
+  delete: (model, id = undefined) => {
     return async (req, res) => {
-      const { id } = req.params;
+      id ??= req.params.id;
 
       try {
         const deleted = await model.destroy({
@@ -115,7 +134,7 @@ const crudController = {
           return res.status(404).json({
             code: 404,
             status: "Not Found",
-            message: `${model.name} not found`,
+            message: `${model.name} not found, finding ${id}`,
           });
         }
         return res.status(200).json({

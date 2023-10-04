@@ -7,7 +7,7 @@ const { adminToken } = require("../middleware/auth");
 router.get("/", adminToken, applicationController.getAll);
 
 // Route to get an application by ID
-router.get("/:userId", adminToken, applicationController.getById);
+router.get("/:id", adminToken, applicationController.getById);
 
 // Route to create a new application
 router.post("/", applicationController.create);

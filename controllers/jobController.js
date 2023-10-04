@@ -1,7 +1,5 @@
 const { Job, Experience, Position, Type } = require("../db/models");
 const { crudController } = require("../utils/crud");
-const { handleError } = require('../utils/errorHandler'); // Import the error handling function
-const { ValidationError } = require('sequelize');
 
 const include = [
   {
@@ -22,9 +20,10 @@ const include = [
 ]
 
 module.exports = {
+  include,
   getAll: crudController.getAll(Job,include),
-  getById: crudController.getById(Job,include),
+  getById: crudController.getById(Job,undefined,include),
   create: crudController.create(Job),
-  update: crudController.update(Job),
+  update: crudController.update(Job,undefined,undefined,include),
   delete: crudController.delete(Job),
 };
