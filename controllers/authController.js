@@ -5,9 +5,10 @@ const { handleError } = require('../utils/errorHandler');
 
 // Function to generate JWT token
 const generateAuthToken = (user) => {
-  const { id, name, email } = user;
-  return jwt.sign({ id, name, email }, process.env.JWT_SECRET, {
-    expiresIn: '1d'
+  const { id, name, email, role } = user;
+  console.log(user)
+  return jwt.sign({ id, name, email, role }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
   });
 };
 
@@ -23,6 +24,8 @@ module.exports = {
       }
 
       const isPasswordMatch = await bcrypt.compare(password, user.password);
+      // const isPasswordMatch = password == user.password;
+      console.log(`password ${password}, dbpassword ${user.password}`)
 
       if (!isPasswordMatch) {
         return handleError(res, { status: 401, message: 'Wrong password' });

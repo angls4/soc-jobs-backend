@@ -13,7 +13,7 @@ module.exports = {
       const limit = parseInt(req.query.limit) || 10;
 
       // Use Sequelize's findAndCountAll for pagination
-      const { count, rows: users } = await User.findAndCountAll({
+      const { count, rows } = await User.findAndCountAll({
         attributes: { exclude: ['password'] },
         limit,
         offset: (page - 1) * limit,
@@ -23,24 +23,16 @@ module.exports = {
 
       return res.status(200).json({
         code: 200,
-        status: 'OK',
-        message: 'Success getting paginated users',
+        status: "OK",
+        message: "Success getting paginated users",
         data: {
-          users,
+          rows,
           totalUsers: count,
           totalPages,
           currentPage: page,
         },
       });
     } catch (err) {
-      if (err instanceof ValidationError) {
-        return res.status(400).json({
-          code: 400,
-          status: 'Bad Request',
-          message: 'Validation Error',
-          errors: err.errors,
-        });
-      }
       return handleError(res, err);
     }
   },
@@ -50,14 +42,14 @@ module.exports = {
       const profile = await User.findOne({
         where: { id: req.user.id },
         attributes: { exclude: ['password'] },
-        include: {
-          model: Job,
-          as: 'appliedJob',
-          attributes: ['title', 'job_desc', 'logo', 'createdAt'],
-          through: {
-            attributes: ['status'],
-          },
-        },
+        // include: {
+        //   model: Job,
+        //   as: 'appliedJob',
+        //   attributes: ['title', 'job_desc', 'logo', 'createdAt'],
+        //   through: {
+        //     attributes: ['status'],
+        //   },
+        // },
       });
 
       return res.status(200).json({
@@ -80,14 +72,14 @@ module.exports = {
       const profile = await User.findOne({
         where: { id },
         attributes: { exclude: ['password'] },
-        include: {
-          model: Job,
-          as: 'appliedJob',
-          attributes: ['title', 'job_desc', 'logo', 'createdAt'],
-          through: {
-            attributes: ['status'],
-          },
-        },
+        // include: {
+        //   model: Job,
+        //   as: 'appliedJob',
+        //   attributes: ['title', 'job_desc', 'logo', 'createdAt'],
+        //   through: {
+        //     attributes: ['status'],
+        //   },
+        // },
       });
 
       if (!profile) {
@@ -112,45 +104,77 @@ module.exports = {
   },
 
   updateProfile: async (req, res) => {
-    const { id } = req.params; // Use the ID from the route parameter
+    // const id = req.params.id ?? req.user.id; // Use the ID from the route parameter or token's user Id
+    const id = req.params.id; // Use the ID from the route parameter
+
+    // Handle if non-admin user tries to update other user's profile
+    if(req.user.role !== 'Admin')
+    if(id != req.user.id){
+      return res.status(403).json({
+        code: 403,
+        status: "Forbidden",
+        message: "You do not have permission to edit other's profile.",
+      });
+    }
+    
     const { name, email, password, gender, address, contact } = req.body;
 
     try {
-      const user = await User.findByPk(id);
-
-      if (!user) {
-        return res.status(404).json({
-          code: 404,
-          status: 'Not Found',
-          message: 'User not found',
-        });
-      }
-
-      // Update user data
+      // const user = await User.findByPk(id);
+      const user = {};
+      
+      // if (!user) {
+      //   return res.status(404).json({
+      //     code: 404,
+      //     status: 'Not Found',
+      //     message: 'User not found',
+      //   });
+      // }
+      
+      // Update user data (only exact values are saved)
       user.name = name;
       user.email = email;
       user.gender = gender;
       user.address = address;
       user.contact = contact;
-
+      
       // Update user password if provided
       if (password) {
         const salt = await bcrypt.genSalt();
         user.password = await bcrypt.hash(password, salt);
       }
-
+      
       // Check if a CV file was uploaded
-      if (req.file) {
-        user.cv = req.file.filename; // Store the CV filename in the 'cv' field
+      // if (req.file) {
+      //   user.cv = req.file.filename; // Store the CV filename in the 'cv' field
+      // }
+      
+
+      const [updated] = await User.update(user, {
+        where: { id },
+      });
+
+      if (!updated) {
+        return res.status(400).json({
+          code: 400,
+          status: "Failed",
+          message: "Failed update profile",
+        });
       }
-
-      await user.save();
-
+      
       return res.status(200).json({
         code: 200,
-        status: 'OK',
-        message: 'Success update profile',
+        status: "OK",
+        message: "Success update profile",
+        data: await User.findByPk(id), // Return the updated user directly
       });
+      
+      // await user.save();
+      // return res.status(200).json({
+      //   code: 200,
+      //   status: 'OK',
+      //   message: 'Success update profile',
+      // });
     } catch (err) {
       return handleError(res, err);
     }
