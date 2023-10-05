@@ -58,7 +58,35 @@ module.exports = {
       attributes,
     })(req, res);
   },
-  create: crudController.create(Application),
+  create: async (req, res)=>{
+    const data = req.body;
+    // TODO verify data schema with zod
+    // verify if not admin  
+    const { closedAt, quota, applicant } = await Job.findOne({
+      where:{id:data.jobId},
+    });
+    if(req.user.role !== 'Admin'){
+      // verify if job closed
+      const close = new Date(closedAt).getTime();
+      const now = new Date().getTime();
+      // console.log(`closed ${close}, now ${now}`);
+      // if closed
+      if(now >= close){
+        return res.status(400).json({
+          message:`Job is closed`,
+        })
+      }
+      // verify if quota availible
+      if(applicant >= quota){
+        return res.status(400).json({
+          message:`Job is full`,
+        })
+      }
+    }
+    const ret = await crudController.create(Application,data)(req,res);
+    console.log(ret);
+    return ret;
+  },
   update: crudController.update(Application, { include }),
   delete: crudController.delete(Application),
 };

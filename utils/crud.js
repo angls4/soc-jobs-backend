@@ -36,6 +36,13 @@ const crudController = {
             };
           });
         const data = await f(req, res, rows);
+        if (!data) {
+          return res.status(404).json({
+            code: 404,
+            status: "Not Found",
+            message: `${model.name} not found`,
+          });
+        }
         console.log('data')
         console.log(data)
         if (paginated) {
@@ -69,7 +76,7 @@ const crudController = {
       options.where = { id };
       options.f ??= (req, res, data) => data;
       const ff = options.f;
-      options.f = async (req, res, data) => (await ff(req, res, data))[0];
+      options.f = async (req, res, data) => (await ff(req, res, data))?.[0];
       return await crudController.getAll(model, options)(req, res);
     };
   },

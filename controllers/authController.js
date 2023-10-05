@@ -17,15 +17,15 @@ const generateAuthToken = (user) => {
   });
 };
 
-const verifyEmailTemplate = fs.readFileSync("./src/emails/verifyEmail.html", { encoding: "utf-8" });
-const passwordResetTemplate = fs.readFileSync("./src/emails/passwordReset.html", { encoding: "utf-8" });
+const verifyEmailTemplate = fs.readFileSync("./src/emails/verifyEmail.ejs", { encoding: "utf-8" });
+const passwordResetTemplate = fs.readFileSync("./src/emails/passwordReset.ejs", { encoding: "utf-8" });
 
-const getVerifyEmailText = (hostUrl, token) => {
-  return ejs.render(verifyEmailTemplate,{hostUrl,token});
+const getVerifyEmailText = (hostUrl, token, data) => {
+  return ejs.render(verifyEmailTemplate, { ...data, hostUrl, token });
   // return `link verifikasi - ${hostUrl}/auth/verify/${token}`;
 };
-const getResetEmailText = (hostUrl, token) => {
-  return ejs.render(passwordResetTemplate, { hostUrl, token });
+const getResetEmailText = (hostUrl, token, data) => {
+  return ejs.render(passwordResetTemplate, { ...data, hostUrl, token });
   // return `link reset password - ${hostUrl}/auth/reset/${token}`;
 };
 

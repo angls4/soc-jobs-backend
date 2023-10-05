@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 const mailOptions = {
   from: "armajid11902@gmail.com",
   // to: "armajid2002@gmail.com",
-  subject: "test-socjobs",
+  subject: "test-socjobs ",
   // text: `link verifikasi - `,
 };
 
@@ -50,7 +50,7 @@ const verifyAndInvalidateLatestToken = (email, token) => {
 };
 
 const sendAuthEmail = async (req,res,name,data, email, hostUrl, getText) => {
-  const emailerResult = await createLink(data, email, hostUrl, getText);
+  const emailerResult = await createLink(data, email, hostUrl,name, getText);
   if (emailerResult === "success")
     return res.status(200).json({
       message: `${name} email sent`,
@@ -80,7 +80,7 @@ const sendEmail = (mailOptions) => {
   });
 };
 
-const createLink = async (data,email,hostUrl,getText) => {
+const createLink = async (data,email,hostUrl,name,getText) => {
   const token = jwt.sign(data, process.env.JWT_SECRET,{expiresIn});
   if(tokenStore[email]){
     const iat = jwt.decode(tokenStore[email]).iat*1000;
@@ -90,23 +90,20 @@ const createLink = async (data,email,hostUrl,getText) => {
     if (diff < resendCooldown) return resendCooldown - diff;
   }
   return await sendEmail(
-    { ...mailOptions, to: email, html: getText(hostUrl,token) },
-    email,
-    hostUrl,
-    token
-  )
-    .then(() => {
-      tokenStore[email] = token;
-      console.log("Updated tokenStore:", tokenStore);
-      return "success";
-    })
-    .catch((e) => {
-      return "notsent";
-    });
+    { ...mailOptions, subject:mailOptions.subject+name, to: email, html: getText(hostUrl,token, data) }
+  ).then(() => {
+    tokenStore[email] = token;
+    console.log("Updated tokenStore:", tokenStore);
+    return "success";
+  })
+  .catch((e) => {
+    console.error(e);
+    return "notsent";
+  });
   
 }
 const cleanExpired = ()=>{
-  console.log("cleaning tokenStore");
+  // console.log("cleaning tokenStore");
   // console.log(tokenStore);
   let count = 0;
   for (const [email, token] of Object.entries(tokenStore)){
