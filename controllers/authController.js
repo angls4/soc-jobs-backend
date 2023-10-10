@@ -1,9 +1,12 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { User } = require('../db/models');
-const { handleError } = require('../utils/errorHandler');
-const { sendAuthEmail,verifyAndInvalidateLatestToken } = require('../utils/emailer');
-const { crudController } = require('../utils/crud');
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { User } = require("../db/models");
+const { handleError } = require("../utils/errorHandler");
+const {
+  sendAuthEmail,
+  verifyAndInvalidateLatestToken,
+} = require("../utils/emailer");
+const { crudController } = require("../utils/crud");
 const userController = require("./userController");
 const fs = require("fs");
 const ejs = require("ejs");
@@ -11,53 +14,76 @@ const ejs = require("ejs");
 // Function to generate JWT token
 const generateAuthToken = (user) => {
   const { id, name, email, role } = user;
-  console.log(user)
+  console.log(user);
   return jwt.sign({ id, name, email, role }, process.env.JWT_SECRET, {
-    expiresIn: "1d",
+    expiresIn: "1d", // TODO : move to config
   });
 };
 
-const verifyEmailTemplate = fs.readFileSync("./src/emails/verifyEmail.ejs", { encoding: "utf-8" });
-const passwordResetTemplate = fs.readFileSync("./src/emails/passwordReset.ejs", { encoding: "utf-8" });
+const verifyEmailTemplate = fs.readFileSync("./src/emails/verifyEmail.ejs", {
+  encoding: "utf-8",
+});
+const passwordResetTemplate = fs.readFileSync(
+  "./src/emails/passwordReset.ejs",
+  { encoding: "utf-8" }
+);
 
+// Render the emails
 const getVerifyEmailText = (hostUrl, token, data) => {
-  return ejs.render(verifyEmailTemplate, { ...data, hostUrl, token });
-  // return `link verifikasi - ${hostUrl}/auth/verify/${token}`;
+  return ejs.render(verifyEmailTemplate, {
+    ...data,
+    path: hostUrl + `/auth/verify`,
+    token,
+  });
+  // return html dengan `link verifikasi - ${hostUrl}/auth/verify/${token}`;
 };
 const getResetEmailText = (hostUrl, token, data) => {
-  return ejs.render(passwordResetTemplate, { ...data, hostUrl, token });
-  // return `link reset password - ${hostUrl}/auth/reset/${token}`;
+  return ejs.render(passwordResetTemplate, {
+    ...data,
+    path: hostUrl + `/auth/reset`,
+    token,
+  });
+  // return html dengan `link reset password - ${hostUrl}/auth/reset/${token}`;
 };
 
-const sendVerifyEmail = async (req,res, userData)=>{
-    const {email} = req.body;
-    const hostUrl = `${req.protocol}://${req.get("host")}`;
-    return await sendAuthEmail(req,res,'Verification',userData,email, hostUrl, getVerifyEmailText);
-}
-const sendResetEmail = async (req,res)=>{
-    const {email} = req.body;
-    const hostUrl = `${req.protocol}://${req.get("host")}`;
-    const user = await User.findOne({
-      where: { email },
-      attributes: userController.attributes,
-      raw: true,
-    });
-    if (user) {
-      return await sendAuthEmail(
-        req,
-        res,
-        "Password reset",
-        user,
-        email,
-        hostUrl,
-        getResetEmailText
-      );
-    }
-    return handleError(res, {
-      status: 404,
-      message: "User not found",
-    });
-}
+// Send the emails using emailer module
+const sendVerifyEmail = async (req, res, userData) => {
+  const { email } = req.body;
+  const hostUrl = `${req.protocol}://${req.get("host")}`;
+  return await sendAuthEmail(
+    req,
+    res,
+    "Verification",
+    userData,
+    email,
+    hostUrl,
+    getVerifyEmailText
+  );
+};
+const sendResetEmail = async (req, res) => {
+  const hostUrl = `${req.protocol}://${req.get("host")}`;
+  const { email } = req.body;
+  const user = await User.findOne({
+    where: { email },
+    attributes: userController.attributes,
+    raw: true,
+  });
+  if (user) {
+    return await sendAuthEmail(
+      req,
+      res,
+      "Password reset",
+      user,
+      email,
+      hostUrl,
+      getResetEmailText
+    );
+  }
+  return handleError(res, {
+    status: 404,
+    message: "User not found",
+  });
+};
 
 module.exports = {
   // Login logic
@@ -98,6 +124,7 @@ module.exports = {
         });
       }
 
+      // passwrod hashing
       const salt = await bcrypt.genSalt();
       const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -107,8 +134,10 @@ module.exports = {
         password: hashedPassword,
         role: "User", // Assign the 'User' role
       };
-      return await sendVerifyEmail(req,res,data);
-      // Assign the 'User' role to the user being registered
+
+      // send the verification email
+      return await sendVerifyEmail(req, res, data);
+      // // Assign the 'User' role to the user being registered
       // const user = await User.create(data);
 
       // const token = generateAuthToken(user);
@@ -140,7 +169,7 @@ module.exports = {
         password: hashedPassword,
         role: "Admin", // Assign the 'Admin' role
       };
-      return await sendVerifyEmail(req, res, data); 
+      return await sendVerifyEmail(req, res, data);
       // Assign the 'Admin' role to the user being registered
       // const user = await User.create();
 
@@ -161,38 +190,50 @@ module.exports = {
     // res.json({ message: "Logout success" });
   },
 
+  // Password reset logic
   resetPassword: async (req, res) => {
     const { token } = req.params;
-    console.log(token)
+    console.log(token);
     if (token) {
       try {
-        const { id,email } = jwt.verify(token, process.env.JWT_SECRET);
+        // verify and decode the token
+        const { id, email } = jwt.verify(token, process.env.JWT_SECRET);
         const { password } = req.body;
+        // verify the token using tokenStore
         if (!verifyAndInvalidateLatestToken(email, token))
           return res.status(400).json({ message: "Token expired" });
+
+        // update the user's password
         return await crudController.update(
           User,
           { attributes: userController.attributes },
           Number(id),
           { password }
-        )(req,res);
+        )(req, res);
       } catch (err) {
         return handleError(res, err); // Handle errors using the handleError function
       }
     }
     return await sendResetEmail(req, res);
   },
+
+  // Registration email verification logic
   verifyEmail: async (req, res) => {
     const { token } = req.params;
-    console.log(token)
+    console.log(token);
     if (token) {
       try {
+        // verify and decode the token
         const data = jwt.verify(token, process.env.JWT_SECRET);
-        if(!verifyAndInvalidateLatestToken(data.email,token)) return res.status(400).json({message:'Token expired'});
+        // verify the token using tokenStore
+        if (!verifyAndInvalidateLatestToken(data.email, token))
+          return res.status(400).json({ message: "Token expired" });
 
-        // Assign the 'User' role to the user being registered
+        // TODO: second data input
+
+        // create the new user
         const user = await User.create(data);
-
+        // generate auth token for the new user
         const authToken = generateAuthToken(user);
         return res.json({
           message: "Register and email verification success",
@@ -203,7 +244,7 @@ module.exports = {
         return handleError(res, error);
       }
     }
-    return res.status(404).json({message:'invalid token'})
+    return res.status(404).json({ message: "invalid token" });
     // return await sendVerifyEmail(req, res);
   },
 };
