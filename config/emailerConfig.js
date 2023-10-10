@@ -14,7 +14,7 @@ const {
 } = process.env;
 
 const mailOptions = {
-  from: "armajid11902@gmail.com",
+  from: "armajid11902@gmail.com", // gak tahu
   // to: "armajid2002@gmail.com",
   subjectPrefix: "test-socjobs ",
   // text: `link verifikasi - `,
