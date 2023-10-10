@@ -224,15 +224,16 @@ module.exports = {
     if (token) {
       try {
         // verify and decode the token
-        const data = jwt.verify(token, process.env.JWT_SECRET);
+        const firstData = jwt.verify(token, process.env.JWT_SECRET);
         // verify the token using tokenStore
-        if (!verifyAndInvalidateLatestToken(data.email, token))
+        if (!verifyAndInvalidateLatestToken(firstData.email, token))
           return res.status(400).json({ message: "Token expired" });
 
-        // TODO: second data input
-
+        // second data input
+        const secondData = {gender,address,contact} = req.body;
+        
         // create the new user
-        const user = await User.create(data);
+        const user = await User.create({ ...firstData, ...secondData });
         // generate auth token for the new user
         const authToken = generateAuthToken(user);
         return res.json({
