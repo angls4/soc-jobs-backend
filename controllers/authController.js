@@ -90,6 +90,7 @@ module.exports = {
   login: async (req, res) => {
     try {
       const { email, password } = req.body;
+      // TODO : validation
       const user = await User.findOne({ where: { email } });
 
       if (!user) {
@@ -115,6 +116,7 @@ module.exports = {
   userRegister: async (req, res) => {
     try {
       const { name, email, password } = req.body;
+      // TODO : validation
       const userExists = await User.findOne({ where: { email } });
 
       if (userExists) {
@@ -151,6 +153,7 @@ module.exports = {
   adminRegister: async (req, res) => {
     try {
       const { name, email, password } = req.body;
+      // TODO : validation
       const userExists = await User.findOne({ where: { email } });
 
       if (userExists) {
@@ -198,17 +201,23 @@ module.exports = {
       try {
         // verify and decode the token
         const { id, email } = jwt.verify(token, process.env.JWT_SECRET);
-        const { password } = req.body;
+
         // verify the token using tokenStore
         if (!verifyAndInvalidateLatestToken(email, token))
           return res.status(400).json({ message: "Token expired" });
+
+        const { password } = req.body;
+        // TODO : validation
+        // passwrod hashing
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         // update the user's password
         return await crudController.update(
           User,
           { attributes: userController.attributes },
           Number(id),
-          { password }
+          { password: hashedPassword }
         )(req, res);
       } catch (err) {
         return handleError(res, err); // Handle errors using the handleError function
@@ -230,6 +239,7 @@ module.exports = {
           return res.status(400).json({ message: "Token expired" });
 
         // second data input
+        // TODO : validation
         const secondData = {gender,address,contact} = req.body;
         
         // create the new user

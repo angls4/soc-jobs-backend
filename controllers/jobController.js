@@ -30,8 +30,8 @@ module.exports = {
       paginated: true,
     })(req, res);
   },
-  getById: crudController.getById(Job,{ include }),
-  create: crudController.create(Job),
-  update: crudController.update(Job, { include }),
+  getById: crudController.getById(Job, { include }),
+  create: crudController.create(Job), // TODO : validation
+  update: crudController.update(Job, { include }), // TODO : validation
   delete: crudController.delete(Job),
 };
