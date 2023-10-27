@@ -18,6 +18,9 @@ const crudController = {
       paginated = false,
       raw = false,
       nest = true,
+      onSuccess, 
+      onFail,
+      onEmpty
     } = options;
     return async (req, res) => {
       try {
@@ -55,7 +58,7 @@ const crudController = {
 
         // Handle empty db query result
         if (!data) {
-          return res.status(404).json({
+          return onEmpty ? onEmpty(req,res) :  res.status(404).json({
             code: 404,
             status: "Not Found",
             message: `${model.name} not found`,
@@ -70,7 +73,7 @@ const crudController = {
           data.totalPages = totalPages;
           data.currentPage = page;
         }
-        return res.status(200).json({
+        return onSuccess ? onSuccess(req,res) : res.status(200).json({
           code: 200,
           status: "OK",
           message: `Success getting ${paginated ? "paginated " : ""}${
@@ -79,7 +82,7 @@ const crudController = {
           data,
         });
       } catch (err) {
-        return handleError(res, err);
+        return onFail ? onFail(req, res, err) : handleError(res, err);
       }
     };
   },
@@ -105,19 +108,20 @@ const crudController = {
 
   // CREATE operation logics
   // TODO : pass validation options
-  create: (model, data) => {
+  create: (model, data, options) => {
+    const { onSuccess, onFail } = options;
     return async (req, res) => {
       data ??= req.body;
       try {
         const row = await model.create(data);
-        return res.status(201).json({
+        return onSuccess ? onSuccess(req,res) : res.status(201).json({
           code: 201,
           status: "Created",
           message: `Success creating ${model.name}`,
           data: row, // Return the created row directly
         });
       } catch (err) {
-        return handleError(res, err); // Handle errors using the handleError function
+        return onFail ? onFail(req, res, err) : handleError(res, err); // Handle errors using the handleError function
       }
     };
   },
@@ -127,7 +131,7 @@ const crudController = {
 
   // UPDATE one row using primary key
   update: (model, options = {}, id, data) => {
-    const { include, attributes, raw = false, nest = true } = options;
+    const { include, attributes, raw = false, nest = true, onSuccess, onFail, onEmpty } = options;
     return async (req, res) => {
       id ??= req.params.id;
       data ??= req.body;
@@ -137,7 +141,7 @@ const crudController = {
           where: { id },
         });
         if (!updated) {
-          return res.status(404).json({
+          return onEmpty ? onEmpty(req, res, err) : res.status(404).json({
             code: 404,
             status: "Not Found",
             message: `${model.name} not found, finding ${id}`,
@@ -149,14 +153,14 @@ const crudController = {
           include,
           attributes,
         });
-        return res.status(200).json({
+        return onSuccess ? onSuccess(req,res) : res.status(200).json({
           code: 200,
           status: "OK",
           message: `Success updating ${model.name}`,
           data: row, // Return the updated row directly
         });
       } catch (err) {
-        return handleError(res, err); // Handle errors using the handleError function
+        return onFail ? onFail(req, res, err) : handleError(res, err); // Handle errors using the handleError function
       }
     };
   },
@@ -164,7 +168,8 @@ const crudController = {
   // DELETE operation logics
 
   // DELTE one row using primary key
-  delete: (model, id) => {
+  delete: (model, options, id, ) => {
+    const { onSuccess, onFail, onEmpty } = options;
     return async (req, res) => {
       id ??= req.params.id;
 
@@ -173,19 +178,19 @@ const crudController = {
           where: { id },
         });
         if (!deleted) {
-          return res.status(404).json({
+          return onEmpty ? onEmpty(req, res, err) : res.status(404).json({
             code: 404,
             status: "Not Found",
             message: `${model.name} not found, finding ${id}`,
           });
         }
-        return res.status(200).json({
+        return onSuccess ? onSuccess(req,res) : res.status(200).json({
           code: 200,
           status: "OK",
           message: `Success deleting ${model.name}`,
         });
       } catch (err) {
-        return handleError(res, err); // Handle errors using the handleError function
+        return onFail ? onFail(req, res, err) : handleError(res, err); // Handle errors using the handleError function
       }
     };
   },

@@ -2,6 +2,10 @@ const { Application, Job, User, Position, Experience } = require("../db/models")
 const { crudController } = require("../utils/crud");
 const userController = require("./userController");
 const jobController = require("./jobController");
+const fs = require("fs");
+const ejs = require("ejs");
+const {mailOptions} = require("../config/emailerConfig");
+
 
 const attributes = ["status", "updatedAt"];
 const includeUser = {
@@ -29,6 +33,11 @@ const includeJob = {
   ],
 };
 const include = [includeUser, includeJob];
+
+const applicationEmailTemplate = fs.readFileSync("./src/emails/email.ejs", {
+  encoding: "utf-8",
+});
+// Render the email
 
 module.exports = {
   includeUser,
@@ -87,6 +96,47 @@ module.exports = {
     console.log(ret);
     return ret;
   },
-  update: crudController.update(Application, { include }), // TODO : validation
+  update: async (req, res) => {
+    const ret =  await crudController.update(Application, { include })(req,res) // TODO : validation
+    // console.log(ret)
+    console.log(res.statusCode)
+    if(ret.statusMessage == "OK"){
+      // const status = ret?.body?.status; // Application's status
+      // if(status){
+      //   const user = req.user
+      //   let emailMessage = ''
+      //   if(status === "Rejected"){
+      //     emailMessage = ejs.render(applicationEmailTemplate,{
+      //       name: user.name,
+      //       applicationId: params.id,
+      //       status: "Ditolak 😤"
+      //     })
+      //   }
+      //   else if (status === "Accepted") {
+      //     emailMessage = ejs.render(applicationEmailTemplate, {
+      //       name: user.name,
+      //       applicationId: params.id,
+      //       status: "Diterima 😊",
+      //     });
+      //   }
+      //   const emailerResult = await sendEmail({
+      //     subject: mailOptions.subjectPrefix + "",
+      //     to: user.email,
+      //     html: emailMessage,
+      //   })
+      //     .then(() => {
+      //       return "success";
+      //     })
+      //     .catch((e) => {
+      //       console.error(e);
+      //       return "not sent";
+      //     });
+      //   ret["emailStatus"] = emailerResult
+      // }
+    }
+    return ret
+  },
+  
+  
   delete: crudController.delete(Application),
 };
