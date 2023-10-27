@@ -5,13 +5,14 @@ const jobController = require("./jobController");
 const fs = require("fs");
 const ejs = require("ejs");
 const {mailOptions} = require("../config/emailerConfig");
+const { sendEmail } = require("../utils/emailer");
 
 
 const attributes = ["status", "updatedAt"];
 const includeUser = {
   model: User,
   as: "User",
-  attributes: ["name"],
+  attributes: ["name","email"],
   // attributes: userController.attributes,
 };
 const includeJob = {
@@ -93,48 +94,48 @@ module.exports = {
       }
     }
     const ret = await crudController.create(Application, data)(req, res);
-    console.log(ret);
     return ret;
   },
   update: async (req, res) => {
-    const ret =  await crudController.update(Application, { include })(req,res) // TODO : validation
-    // console.log(ret)
-    console.log(res.statusCode)
-    if(ret.statusMessage == "OK"){
-      // const status = ret?.body?.status; // Application's status
-      // if(status){
-      //   const user = req.user
-      //   let emailMessage = ''
-      //   if(status === "Rejected"){
-      //     emailMessage = ejs.render(applicationEmailTemplate,{
-      //       name: user.name,
-      //       applicationId: params.id,
-      //       status: "Ditolak 😤"
-      //     })
-      //   }
-      //   else if (status === "Accepted") {
-      //     emailMessage = ejs.render(applicationEmailTemplate, {
-      //       name: user.name,
-      //       applicationId: params.id,
-      //       status: "Diterima 😊",
-      //     });
-      //   }
-      //   const emailerResult = await sendEmail({
-      //     subject: mailOptions.subjectPrefix + "",
-      //     to: user.email,
-      //     html: emailMessage,
-      //   })
-      //     .then(() => {
-      //       return "success";
-      //     })
-      //     .catch((e) => {
-      //       console.error(e);
-      //       return "not sent";
-      //     });
-      //   ret["emailStatus"] = emailerResult
-      // }
+    const ret = await crudController.update(Application, { include , send:false})(req,res) // TODO : validation
+    ret["emailStatus"] = 'not sent';
+    if (ret.code == 200) {
+      const status = ret.data.status; // Application's status
+      if (status) {
+        try {
+          const user = ret.data.User;
+          let emailMessage = "";
+          if (status === "Rejected") {
+            emailMessage = ejs.render(applicationEmailTemplate, {
+              name: user.name,
+              jobTitle: ret.data.Job.title,
+              status: "Ditolak 😤",
+            });
+          } else if (status === "Accepted") {
+            emailMessage = ejs.render(applicationEmailTemplate, {
+              name: user.name,
+              jobTitle: ret.data.Job.title,
+              status: "Diterima 😊",
+            });
+          }
+          const emailerResult = await sendEmail({
+            ...mailOptions,
+            subject: mailOptions.subjectPrefix + "- application",
+            to: user.email,
+            html: emailMessage,
+          })
+            .then(() => {
+              ret["emailStatus"] = "sent";
+            })
+            .catch((e) => {
+              throw e;
+            })
+        } catch (e) {
+          ret["emailError"] = e.message;
+        }
+      }
     }
-    return ret
+    return res.status(ret.code).json(ret);
   },
   
   
