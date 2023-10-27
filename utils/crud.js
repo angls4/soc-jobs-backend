@@ -18,8 +18,9 @@ const crudController = {
       paginated = false,
       raw = true,
       nest = true,
-      send=true
+      send = true,
     } = options;
+
     return async (req, res) => {
       try {
         // Pagination
@@ -52,7 +53,7 @@ const crudController = {
             status: "Not Found",
             message: `${model.name} not found`,
           };
-          if(send) res.status(404).json(ret);
+          if (send) res.status(404).json(ret);
           return ret;
         }
         // console.log('data')
@@ -72,7 +73,7 @@ const crudController = {
           }(s)`,
           data,
         };
-        if(send) res.status(200).json(ret);
+        if (send) res.status(200).json(ret);
         return ret;
       } catch (err) {
         return handleError(res, err);
@@ -88,9 +89,10 @@ const crudController = {
     };
   },
   // READ one row using primary key
-  getById: (model, options = {}, id) => {
+  getById: (model, options = {}, _id) => {
     return async (req, res) => {
-      id ??= req.params.id;
+      id = _id ?? req.params.id;
+      console.log(req.params);
       options.where = { id };
       return await crudController.getAll(model, options)(req, res);
     };
@@ -99,7 +101,7 @@ const crudController = {
   // CREATE operation logics
   // TODO : pass validation options
   create: (model, data, options = {}) => {
-    const {send = true} = options
+    const { send = true } = options;
     return async (req, res) => {
       data ??= req.body;
       try {
@@ -110,8 +112,8 @@ const crudController = {
           message: `Success creating ${model.name}`,
           data: row, // Return the created row directly
         };
-        if(send) res.status(201).json(ret);
-        return ret
+        if (send) res.status(201).json(ret);
+        return ret;
       } catch (err) {
         return handleError(res, err); // Handle errors using the handleError function
       }
@@ -122,11 +124,17 @@ const crudController = {
   // TODO : pass validation options
 
   // UPDATE one row using primary key
-  update: (model, options = {}, id, data) => {
-    const { include, attributes, raw = true, nest = true, send=true} = options;
+  update: (model, options = {}, _id, _data) => {
+    const {
+      include,
+      attributes,
+      raw = true,
+      nest = true,
+      send = true,
+    } = options;
     return async (req, res) => {
-      id ??= req.params.id;
-      data ??= req.body;
+      id = _id ?? req.params.id;
+      data = _data ?? req.body;
 
       try {
         const [updated] = await model.update(data, {
@@ -138,7 +146,7 @@ const crudController = {
             status: "Not Found",
             message: `${model.name} not found, finding ${id}`,
           };
-          if(send) res.status(404).json(ret);
+          if (send) res.status(404).json(ret);
           return ret;
         }
 
@@ -147,7 +155,7 @@ const crudController = {
           include,
           attributes,
           raw,
-          nest
+          nest,
         });
         const ret = {
           code: 200,
@@ -155,7 +163,7 @@ const crudController = {
           message: `Success updating ${model.name}`,
           data: row, // Return the updated row directly
         };
-        if(send) res.status(200).json(ret);
+        if (send) res.status(200).json(ret);
         return ret;
       } catch (err) {
         return handleError(res, err); // Handle errors using the handleError function
@@ -166,10 +174,10 @@ const crudController = {
   // DELETE operation logics
 
   // DELTE one row using primary key
-  delete: (model, id, options={}) => {
+  delete: (model, options = {}, _id) => {
     const { send = true } = options;
     return async (req, res) => {
-      id ??= req.params.id;
+      id = _id ?? req.params.id;
       try {
         const deleted = await model.destroy({
           where: { id },
@@ -180,7 +188,7 @@ const crudController = {
             status: "Not Found",
             message: `${model.name} not found, finding ${id}`,
           };
-          if(send) res.status(404).json(ret);
+          if (send) res.status(404).json(ret);
           return ret;
         }
         const ret = {
@@ -188,7 +196,7 @@ const crudController = {
           status: "OK",
           message: `Success deleting ${model.name}`,
         };
-        if(send) res.status(200).json(ret);
+        if (send) res.status(200).json(ret);
         return ret;
       } catch (err) {
         return handleError(res, err); // Handle errors using the handleError function
