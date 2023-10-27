@@ -13,19 +13,27 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
   }
-  User.init({
-    name: DataTypes.STRING,
-    email: DataTypes.STRING,
-    password: DataTypes.STRING,
-    avatar: DataTypes.STRING, // Add the 'avatar' field
-    gender: DataTypes.ENUM(['Male', 'Female']),
-    address: DataTypes.STRING,
-    contact: DataTypes.STRING,
-    cv: DataTypes.STRING,
-    role: DataTypes.ENUM(['Admin', 'User']),
-  }, {
-    sequelize,
-    modelName: 'User',
-  });
+  User.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      name: DataTypes.STRING,
+      email: DataTypes.STRING,
+      password: DataTypes.STRING,
+      avatar: DataTypes.STRING, // Add the 'avatar' field
+      gender: DataTypes.ENUM(["Male", "Female"]),
+      address: DataTypes.STRING,
+      contact: DataTypes.STRING,
+      cv: DataTypes.STRING,
+      role: DataTypes.ENUM(["Admin", "User"]),
+    },
+    {
+      sequelize,
+      modelName: "User",
+    }
+  );
   return User;
 };
